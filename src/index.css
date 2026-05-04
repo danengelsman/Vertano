@@ -1,0 +1,280 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+/* v3-compatible animate plugin (used by shadcn components: Accordion, Dialog, etc.) */
+@plugin "tailwindcss-animate";
+
+/* Typography plugin — enables `prose` classes if you ever use them */
+@plugin "@tailwindcss/typography";
+
+/* Enable class-based dark mode: `dark:` modifier applies under <html class="dark"> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =============================================================
+   Shadcn CSS variables (HSL triplets, no hsl() wrapper)
+   Ported from the old tailwind.config.ts and revised for Earnest
+   ============================================================= */
+:root {
+  --background: 36 30% 94%;
+  --foreground: 30 15% 8%;
+
+  --card: 42 35% 97%;
+  --card-foreground: 30 15% 8%;
+
+  --popover: 42 35% 97%;
+  --popover-foreground: 30 15% 8%;
+
+  --primary: 27 28% 37%;
+  --primary-foreground: 36 30% 94%;
+
+  --secondary: 38 23% 74%;
+  --secondary-foreground: 30 15% 8%;
+
+  --accent: 39 65% 48%;
+  --accent-foreground: 30 15% 8%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --muted: 36 24% 90%;
+  --muted-foreground: 26 16% 38%;
+
+  --border: 38 19% 80%;
+  --input: 38 19% 80%;
+  --ring: 39 65% 48%;
+
+  --radius: 0.5rem;
+
+  /* Sidebar (shadcn sidebar.tsx expects these) */
+  --sidebar-background: 42 35% 97%;
+  --sidebar-foreground: 30 15% 8%;
+  --sidebar-primary: 27 28% 37%;
+  --sidebar-primary-foreground: 36 30% 94%;
+  --sidebar-accent: 36 24% 90%;
+  --sidebar-accent-foreground: 30 15% 8%;
+  --sidebar-border: 38 19% 80%;
+  --sidebar-ring: 39 65% 48%;
+
+  --chart-1: 27 28% 37%;
+  --chart-2: 39 65% 48%;
+  --chart-3: 38 23% 74%;
+  --chart-4: 26 16% 38%;
+  --chart-5: 0 84.2% 60.2%;
+}
+
+.dark {
+  --background: 30 15% 8%;
+  --foreground: 36 30% 94%;
+
+  --card: 29 16% 11%;
+  --card-foreground: 36 30% 94%;
+
+  --popover: 29 16% 11%;
+  --popover-foreground: 36 30% 94%;
+
+  --primary: 38 23% 74%;
+  --primary-foreground: 30 15% 8%;
+
+  --secondary: 27 28% 37%;
+  --secondary-foreground: 36 30% 94%;
+
+  --accent: 39 65% 48%;
+  --accent-foreground: 30 15% 8%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --muted: 26 13% 16%;
+  --muted-foreground: 36 18% 74%;
+
+  --border: 30 10% 22%;
+  --input: 30 10% 22%;
+  --ring: 39 65% 48%;
+
+  --sidebar-background: 29 16% 11%;
+  --sidebar-foreground: 36 30% 94%;
+  --sidebar-primary: 38 23% 74%;
+  --sidebar-primary-foreground: 30 15% 8%;
+  --sidebar-accent: 39 65% 48%;
+  --sidebar-accent-foreground: 30 15% 8%;
+  --sidebar-border: 30 10% 22%;
+  --sidebar-ring: 39 65% 48%;
+
+  --chart-1: 38 23% 74%;
+  --chart-2: 39 65% 48%;
+  --chart-3: 27 28% 37%;
+  --chart-4: 0 0% 98%;
+  --chart-5: 0 62.8% 30.6%;
+}
+
+/* =============================================================
+   Tailwind v4 theme — expose the CSS variables as utility classes.
+   This is what makes `bg-primary`, `text-foreground`, `border-border`,
+   etc. actually work for all your shadcn components.
+   ============================================================= */
+@theme inline {
+  /* Fonts */
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: "Manrope", "Instrument Sans", ui-sans-serif, sans-serif;
+
+  /* Radius scale */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  /* Semantic colors — hsl() wraps the HSL triplet, preserving opacity-modifier support */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  /* Keyframes — ported from your old config */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-slide-in: slide-in 0.3s ease-out;
+
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-in {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+/* =============================================================
+   Base layer
+   ============================================================= */
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+  }
+
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.3);
+  }
+}
+
+@layer components {
+  .earnest-grid {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 84px 84px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), transparent 85%);
+  }
+
+  .earnest-auth-shell {
+    background:
+      radial-gradient(circle at top, rgba(198,146,43,0.16), transparent 34%),
+      linear-gradient(180deg, rgba(245,240,232,0.96), rgba(245,240,232,1));
+  }
+
+  .earnest-auth-panel {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.76), rgba(255,255,255,0.56)),
+      rgba(245,240,232,0.82);
+    backdrop-filter: blur(18px);
+  }
+
+  .earnest-fade-up {
+    animation: earnest-fade-up 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .earnest-delay-1 { animation-delay: 0.08s; }
+  .earnest-delay-2 { animation-delay: 0.16s; }
+  .earnest-delay-3 { animation-delay: 0.24s; }
+  .earnest-delay-4 { animation-delay: 0.32s; }
+}
+
+@keyframes earnest-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes earnest-drift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0) scale(1.04);
+  }
+}
+
+.earnest-drift {
+  animation: earnest-drift 10s ease-in-out infinite;
+}
