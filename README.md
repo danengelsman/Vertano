@@ -18,7 +18,7 @@ Vertano is a step-by-step content creation system that helps beginners build You
 
 - Node.js 18+ 
 - npm or yarn
-- Supabase account (for authentication)
+- Supabase account (for authentication and data storage)
 
 ### Installation
 
