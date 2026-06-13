@@ -486,6 +486,18 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+
+    // Catch-all: serve index.html for any non-API route so that
+    // BrowserRouter deep links and page reloads work correctly in dev.
+    app.get('*', async (req, res, next) => {
+      try {
+        const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
+        const transformed = await vite.transformIndexHtml(req.originalUrl, indexHtml);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(transformed);
+      } catch (e) {
+        next(e);
+      }
+    });
   } else {
     // Production build only
     let distPath = path.join(__dirname, 'dist');
