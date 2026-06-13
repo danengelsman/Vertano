@@ -35,7 +35,13 @@ const hookSuggestions = [
   'Use "Most people don\'t know this about..." format',
 ];
 
-
+const platformThemes: Record<Platform, string> = {
+  tiktok: 'bg-gradient-to-br from-[#00f2fe]/10 via-slate-900/5 to-[#fe0979]/10 border-[#00f2fe]/20',
+  instagram: 'bg-gradient-to-br from-[#833AB4]/10 via-[#FD1D1D]/10 to-[#F56040]/10 border-pink-500/20',
+  youtube: 'bg-[#FF0000]/10 border-[#FF0000]/20',
+  twitter: 'bg-[#1DA1F2]/10 border-[#1DA1F2]/20',
+  linkedin: 'bg-[#0A66C2]/10 border-[#0A66C2]/20',
+};
 
 const ContentEditor: React.FC = () => {
   const { addDraft, publishDraft, userProfile, setActiveView, brandProfile } = useAppContext();
@@ -161,7 +167,7 @@ const ContentEditor: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <Select value={platform} onValueChange={(v) => setPlatform(v as Platform)}>
-            <SelectTrigger className="w-40 h-10">
+            <SelectTrigger className={`w-40 h-10 border transition-colors duration-500 ${platformThemes[platform]}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -173,27 +179,29 @@ const ContentEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-muted/30 rounded-xl w-fit">
-        {[
-          { id: 'write' as const, label: 'Write', icon: <Type className="w-4 h-4" /> },
-          { id: 'ai' as const, label: 'AI Studio', icon: <Brain className="w-4 h-4" /> },
-          { id: 'format' as const, label: 'AI Format', icon: <Wand2 className="w-4 h-4" /> },
-          { id: 'media' as const, label: 'Media', icon: <Video className="w-4 h-4" /> },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              activeTab === tab.id
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-          >
-            {tab.icon} {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Platform Colored Backdrop */}
+      <div className={`p-6 sm:p-8 rounded-[2rem] border transition-colors duration-500 ${platformThemes[platform]}`}>
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 bg-white/60 backdrop-blur-md rounded-xl w-fit mb-8 shadow-sm border border-black/5">
+          {[
+            { id: 'write' as const, label: 'Write', icon: <Type className="w-4 h-4" /> },
+            { id: 'ai' as const, label: 'AI Studio', icon: <Brain className="w-4 h-4" /> },
+            { id: 'format' as const, label: 'AI Format', icon: <Wand2 className="w-4 h-4" /> },
+            { id: 'media' as const, label: 'Media', icon: <Video className="w-4 h-4" /> },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === tab.id
+                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-black/5'
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Editor */}
@@ -400,6 +408,7 @@ Try starting with a hook like:
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
