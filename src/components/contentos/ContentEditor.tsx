@@ -36,11 +36,11 @@ const hookSuggestions = [
 ];
 
 const platformThemes: Record<Platform, string> = {
-  tiktok: 'bg-gradient-to-br from-[#00f2fe]/10 via-slate-900/5 to-[#fe0979]/10 border-[#00f2fe]/20',
-  instagram: 'bg-gradient-to-br from-[#833AB4]/10 via-[#FD1D1D]/10 to-[#F56040]/10 border-pink-500/20',
-  youtube: 'bg-[#FF0000]/10 border-[#FF0000]/20',
-  twitter: 'bg-[#1DA1F2]/10 border-[#1DA1F2]/20',
-  linkedin: 'bg-[#0A66C2]/10 border-[#0A66C2]/20',
+  tiktok: 'bg-gradient-to-br from-[#00f2fe]/20 via-slate-900/10 to-[#fe0979]/20 border-[#fe0979]/50 shadow-xl shadow-[#fe0979]/10',
+  instagram: 'bg-gradient-to-br from-[#833AB4]/20 via-[#FD1D1D]/20 to-[#F56040]/20 border-[#FD1D1D]/50 shadow-xl shadow-[#FD1D1D]/10',
+  youtube: 'bg-[#FF0000]/15 border-[#FF0000]/50 shadow-xl shadow-[#FF0000]/10',
+  twitter: 'bg-[#1DA1F2]/20 border-[#1DA1F2]/50 shadow-xl shadow-[#1DA1F2]/10',
+  linkedin: 'bg-[#0A66C2]/20 border-[#0A66C2]/50 shadow-xl shadow-[#0A66C2]/10',
 };
 
 const ContentEditor: React.FC = () => {
@@ -158,29 +158,36 @@ const ContentEditor: React.FC = () => {
   const scoreBg = score >= 80 ? 'from-emerald-500 to-green-500' : score >= 60 ? 'from-amber-500 to-orange-500' : 'from-red-500 to-rose-500';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Content Studio</h2>
-          <p className="text-slate-500 mt-1">Create, score, and format your content for any platform</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="text-center max-w-2xl mx-auto mb-4">
+        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Content Studio</h2>
+        <p className="text-slate-500 mt-2 text-lg">Create, score, and format your content for any platform. Let AI guide you to the perfect post.</p>
+      </div>
+
+      {/* Platform Colored Backdrop */}
+      <div className={`p-6 sm:p-8 rounded-[2rem] border-2 transition-all duration-500 ${platformThemes[platform]}`}>
+        
+        {/* Prominent Platform Selector */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/90 backdrop-blur-md rounded-2xl p-5 mb-8 shadow-sm border border-slate-200">
+          <div className="mb-4 sm:mb-0">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-500" />
+              Target Platform
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">Choose where this content is going to optimize format and AI scoring.</p>
+          </div>
           <Select value={platform} onValueChange={(v) => setPlatform(v as Platform)}>
-            <SelectTrigger className={`w-40 h-10 border transition-colors duration-500 ${platformThemes[platform]}`}>
+            <SelectTrigger className={`w-full sm:w-56 h-14 text-base font-bold rounded-xl border-2 transition-colors duration-500 ${platformThemes[platform]} bg-white hover:bg-opacity-80`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {Object.entries(platformLabels).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
+                <SelectItem key={key} value={key} className="text-base py-3 font-medium">{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      {/* Platform Colored Backdrop */}
-      <div className={`p-6 sm:p-8 rounded-[2rem] border transition-colors duration-500 ${platformThemes[platform]}`}>
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-white/60 backdrop-blur-md rounded-xl w-fit mb-8 shadow-sm border border-black/5">
           {[
