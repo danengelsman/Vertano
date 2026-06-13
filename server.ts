@@ -12,7 +12,12 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-const geminiApi = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+// Lazy getter — ensures the key is read after dotenv.config() has run
+function getGeminiClient(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set in .env');
+  return new GoogleGenAI({ apiKey });
+}
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -182,8 +187,8 @@ async function startServer() {
   app.post("/api/ai/generate-content", async (req, res) => {
     const { prompt, niche, platform } = req.body;
     try {
-      const result = await geminiApi.models.generateContent({
-        model: 'gemini-2.0-flash',
+      const result = await getGeminiClient().models.generateContent({
+        model: 'gemini-2.5-flash',
         contents: `As an expert content creator for ${platform} in the ${niche} niche, generate content based on this prompt: ${prompt}. Focus on engaging and beginner-friendly language.`,
       });
       const generatedContent = result.text;
@@ -196,20 +201,42 @@ async function startServer() {
 
   app.post("/api/ai/score-content", async (req, res) => {
     const { content } = req.body;
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      return res.status(400).json({ score: 0, feedback: "No content provided to score." });
+    }
     try {
-      const result = await geminiApi.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: `Review the following content and provide a score out of 100 for overall quality, engagement, and clarity, along with specific, constructive feedback for a beginner creator. Format your response as a JSON object with 'score' (number) and 'feedback' (string) fields. Content: """${content}"""`,
+      const result = await getGeminiClient().models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Review the following content and provide a score out of 100 for overall quality, engagement, and clarity, along with specific, constructive feedback for a beginner creator. Respond ONLY with a raw JSON object — no markdown, no explanation, no code fences. The JSON must have exactly two fields: "score" (a number from 0 to 100) and "feedback" (a string). Content: """${content}"""`,
       });
       const aiResponseText = result.text ?? '';
 
-      // Attempt to parse JSON. If it fails, log and send a generic error.
+      // Extraction strategy: try JSON fence → bare fence → brace scan
+      let jsonString: string | null = null;
+
+      const fenceMatch = aiResponseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) {
+        jsonString = fenceMatch[1].trim();
+      } else {
+        const braceStart = aiResponseText.indexOf('{');
+        const braceEnd = aiResponseText.lastIndexOf('}');
+        if (braceStart !== -1 && braceEnd > braceStart) {
+          jsonString = aiResponseText.slice(braceStart, braceEnd + 1);
+        }
+      }
+
+      if (!jsonString) {
+        console.error("No JSON found in AI response:", aiResponseText);
+        return res.status(500).json({ score: 0, feedback: "AI returned an unreadable response. Please try again." });
+      }
+
       try {
-        const cleaned = aiResponseText.replace(/```json|```/g, '').trim();
-        const parsedResponse = JSON.parse(cleaned);
-        res.json(parsedResponse);
+        const parsed = JSON.parse(jsonString);
+        const score = typeof parsed.score === 'number' ? Math.min(100, Math.max(0, parsed.score)) : 0;
+        const feedback = typeof parsed.feedback === 'string' ? parsed.feedback : "No feedback provided.";
+        res.json({ score, feedback });
       } catch (parseError) {
-        console.error("Failed to parse AI response as JSON:", aiResponseText);
+        console.error("Failed to parse extracted JSON:", jsonString);
         res.status(500).json({ score: 0, feedback: "Could not parse AI feedback. Please try again." });
       }
     } catch (error) {
