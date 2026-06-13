@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import {
   PenTool, Sparkles, Send, Save, Copy, Check, ChevronDown,
   AlertCircle, Lightbulb, Hash, AtSign, Type, Video, Mic,
-  Image, Monitor, ArrowRight, RefreshCw, Wand2, X, BotMessageSquare, Brain
+  Image, Monitor, ArrowRight, RefreshCw, Wand2, X, BotMessageSquare, Brain, Loader2
 } from 'lucide-react';
 import {
   Select,
@@ -27,13 +27,6 @@ const platformLabels: Record<Platform, string> = {
   linkedin: 'LinkedIn',
 };
 
-const hookSuggestions = [
-  'Start with a surprising statistic to grab attention',
-  'Open with a bold, controversial statement',
-  'Ask a thought-provoking question your audience relates to',
-  'Share a personal failure or lesson learned',
-  'Use "Most people don\'t know this about..." format',
-];
 
 const platformThemes: Record<Platform, string> = {
   tiktok: 'bg-gradient-to-br from-[#00f2fe]/20 via-slate-900/10 to-[#fe0979]/20 border-[#fe0979]/50 shadow-xl shadow-[#fe0979]/10',
@@ -60,6 +53,36 @@ const ContentEditor: React.FC = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [isScoringAI, setIsScoringAI] = useState(false);
+  const [hooks, setHooks] = useState<string[]>(brandProfile?.content_hooks || []);
+  const [isGeneratingHooks, setIsGeneratingHooks] = useState(false);
+
+  const fetchHooks = useCallback(async () => {
+    setIsGeneratingHooks(true);
+    try {
+      const res = await fetch('/api/ai/generate-hooks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          niche: userProfile?.niche || 'General',
+          platform,
+          brandProfile
+        })
+      });
+      const data = await res.json();
+      if (data.hooks && Array.isArray(data.hooks)) {
+        setHooks(data.hooks);
+      }
+    } catch (error) {
+      console.error("Failed to generate hooks:", error);
+      toast({ title: 'Error', description: 'Failed to generate new hooks.', variant: 'destructive' });
+    } finally {
+      setIsGeneratingHooks(false);
+    }
+  }, [userProfile?.niche, platform, brandProfile]);
+
+  useEffect(() => {
+    fetchHooks();
+  }, [platform, fetchHooks]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -478,24 +501,44 @@ Try starting with a hook like:
 
           {/* Hook Ideas */}
           <div className="rounded-2xl bg-white border border-slate-200 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-violet-500" />
-              <h4 className="text-sm font-semibold text-slate-900">Hook Ideas</h4>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-500" />
+                <h4 className="text-sm font-semibold text-slate-900">Hook Ideas</h4>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2 text-slate-400 hover:text-violet-600"
+                onClick={fetchHooks}
+                disabled={isGeneratingHooks}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingHooks ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
             <div className="space-y-2">
-              {hookSuggestions.map((hook, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setBody(prev => hook + '\n\n' + prev);
-                    setActiveTab('write');
-                    toast({ title: 'Hook added!', description: 'The hook has been prepended to your content.' });
-                  }}
-                  className="w-full text-left p-2.5 rounded-lg text-xs text-slate-600 hover:bg-violet-50 hover:text-violet-700 transition-colors border border-transparent hover:border-violet-200"
-                >
-                  {hook}
-                </button>
-              ))}
+              {isGeneratingHooks ? (
+                <div className="py-6 text-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-violet-400 mx-auto mb-2" />
+                  <p className="text-xs text-slate-500">Brainstorming hooks...</p>
+                </div>
+              ) : hooks.length > 0 ? (
+                hooks.map((hook, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setBody(prev => hook + '\n\n' + prev);
+                      setActiveTab('write');
+                      toast({ title: 'Hook added!', description: 'The hook has been prepended to your content.' });
+                    }}
+                    className="w-full text-left p-2.5 rounded-lg text-xs text-slate-600 hover:bg-violet-50 hover:text-violet-700 transition-colors border border-transparent hover:border-violet-200"
+                  >
+                    {hook}
+                  </button>
+                ))
+              ) : (
+                <p className="text-xs text-slate-500 text-center py-4 border border-dashed border-slate-200 rounded-lg">No hooks available. Try generating some!</p>
+              )}
             </div>
           </div>
         </div>

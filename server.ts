@@ -184,6 +184,121 @@ async function startServer() {
 
   // --- AI Endpoints ---
 
+  app.post("/api/ai/onboarding-chat", async (req, res) => {
+    const { messages } = req.body; 
+    
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.json({ text: "Hi there! I'm your Creator Coach. To get started, what kind of topics or hobbies do you find yourself talking about all the time?" });
+    }
+
+    const transcript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n\n");
+    
+    const prompt = `You are a friendly, patient, and highly encouraging Creator Coach holding the hand of a brand new content creator. 
+Your goal is to figure out what kind of content they want to make and where they want to post it, by asking ONE short, simple question at a time in a conversational way.
+Once you have a clear understanding of their passions and target platform, you MUST stop asking questions and propose exactly 3 highly personalized, specific niche ideas for them.
+To propose niches, you MUST output ONLY a raw JSON array of exactly 3 objects. Format: [{"niche": "Name of niche", "reason": "Why this fits them"}]. Do not include any conversational text or markdown fences when outputting the JSON array, just the raw JSON.
+If you need more info, just respond with friendly, conversational text (not JSON). Keep your conversational responses under 3 sentences.
+
+CONVERSATION SO FAR:
+${transcript}
+
+COACH:`;
+
+    try {
+      const result = await getGeminiClient().models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+      let aiResponseText = result.text?.trim() ?? '';
+      
+      const fenceMatch = aiResponseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) aiResponseText = fenceMatch[1].trim();
+
+      if (aiResponseText.startsWith('[') && aiResponseText.endsWith(']')) {
+        try {
+          const niches = JSON.parse(aiResponseText);
+          return res.json({ niches });
+        } catch (e) {
+           console.error("Failed to parse niches JSON");
+        }
+      }
+      
+      res.json({ text: aiResponseText });
+    } catch (error) {
+      console.error("AI Onboarding Error:", error);
+      res.status(500).json({ error: "Failed to generate response." });
+    }
+  });
+
+  app.post("/api/ai/generate-branding", async (req, res) => {
+    const { niche, transcript } = req.body;
+    try {
+      const prompt = `Based on the following conversation with a new creator, and their chosen niche of "${niche}", generate a complete brand profile for them.
+Return ONLY a raw JSON object with the following fields:
+- "name" (string: a catchy creator name or channel name)
+- "tagline" (string: a short, punchy bio or tagline)
+- "archetype" (string: e.g. "The Educator", "The Entertainer", "The Guide")
+- "personality" (string: 2-3 words describing their vibe)
+- "colors" (array of 2-3 hex codes that fit the vibe)
+- "typography" (string: a Google font name recommendation)
+- "visual_style" (string: 1 sentence describing the visual aesthetic)
+
+Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.
+
+CONVERSATION CONTEXT:
+${transcript}`;
+
+      const result = await getGeminiClient().models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+      
+      let jsonString = result.text ?? '';
+      const fenceMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) jsonString = fenceMatch[1].trim();
+
+      const brandProfile = JSON.parse(jsonString);
+      res.json({ brandProfile });
+    } catch (error) {
+      console.error("AI Branding Error:", error);
+      res.status(500).json({ error: "Failed to generate brand profile." });
+    }
+  });
+
+  app.post("/api/ai/generate-hooks", async (req, res) => {
+    const { niche, platform, brandProfile } = req.body;
+    try {
+      const prompt = `You are an expert viral content strategist for ${platform}.
+Generate 5 unique, highly engaging hook ideas for a creator in the "${niche}" niche.
+Their brand personality is: ${brandProfile?.personality || 'Authentic'}.
+Their brand archetype is: ${brandProfile?.archetype || 'Creator'}.
+
+Return ONLY a raw JSON array of 5 strings. Do NOT include markdown fences.
+Example: ["Hook 1", "Hook 2", "Hook 3", "Hook 4", "Hook 5"]`;
+
+      const result = await getGeminiClient().models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+      
+      let jsonString = result.text ?? '';
+      const fenceMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) jsonString = fenceMatch[1].trim();
+      
+      const braceStart = jsonString.indexOf('[');
+      const braceEnd = jsonString.lastIndexOf(']');
+      if (braceStart !== -1 && braceEnd !== -1) {
+          jsonString = jsonString.slice(braceStart, braceEnd + 1);
+      }
+
+      const hooks = JSON.parse(jsonString);
+      res.json({ hooks });
+    } catch (error) {
+      console.error("AI Hooks Error:", error);
+      res.status(500).json({ error: "Failed to generate hooks." });
+    }
+  });
+
   app.post("/api/ai/generate-content", async (req, res) => {
     const { prompt, niche, platform } = req.body;
     try {
