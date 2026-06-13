@@ -131,7 +131,9 @@ async function testConnection() {
     }
   }
 }
-testConnection();
+// testConnection() removed — Firebase/Firestore is not the active data layer.
+// The app uses the Express/SQLite API at /api/*. Re-enable this when Firebase
+// auth is wired up properly.
 
 export { onAuthStateChanged, serverTimestamp, updateProfile };
 export type { FirebaseUser };
