@@ -66,7 +66,7 @@ const AppLayout: React.FC = () => {
       <Navbar />
 
       {/* Main Content */}
-      {!userProfile?.onboardingComplete ? (
+      {!userProfile?.onboardingComplete && activeView === 'dashboard' ? (
         <>
           <LandingHero />
           <Footer />
