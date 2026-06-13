@@ -266,6 +266,78 @@ Try starting with a hook like:
             </div>
           )}
 
+          {activeTab === 'ai' && (
+            <div className="rounded-2xl bg-white border border-slate-200 p-6 space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">AI Co-Creator</h3>
+                  <p className="text-xs text-slate-500">Generate high-converting content with AI</p>
+                </div>
+              </div>
+              
+              <Textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="What do you want to create? (e.g., 'A Twitter thread about productivity tips for developers')"
+                className="min-h-[120px] resize-none"
+              />
+              
+              <Button
+                onClick={async () => {
+                  if (!aiPrompt.trim()) return;
+                  setIsGeneratingAI(true);
+                  try {
+                    const content = await generateAIContent(aiPrompt, userProfile?.niche || 'General', platform);
+                    setGeneratedContent(content);
+                  } catch (error) {
+                    toast({ title: 'Error', description: 'Failed to generate content.', variant: 'destructive' });
+                  } finally {
+                    setIsGeneratingAI(false);
+                  }
+                }}
+                disabled={isGeneratingAI || !aiPrompt.trim()}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 gap-2"
+              >
+                {isGeneratingAI ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {isGeneratingAI ? 'Generating...' : 'Generate Content'}
+              </Button>
+
+              {generatedContent && (
+                <div className="mt-6 space-y-4 border-t border-slate-100 pt-6">
+                  <h4 className="text-sm font-semibold text-slate-900">Generated Result:</h4>
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans">{generatedContent}</pre>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                      onClick={() => {
+                        setBody((prev) => prev ? prev + '\n\n' + generatedContent : generatedContent);
+                        toast({ title: 'Added to Editor', description: 'The generated content has been appended to your draft.' });
+                      }}
+                    >
+                      <Type className="w-4 h-4" /> Add to Editor
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="gap-2"
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedContent);
+                        toast({ title: 'Copied!', description: 'Copied to clipboard' });
+                      }}
+                    >
+                      <Copy className="w-4 h-4" /> Copy
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'format' && (
             <div className="rounded-2xl bg-white border border-slate-200 p-6 space-y-4">
               <div className="flex items-center gap-3 mb-2">
