@@ -450,17 +450,29 @@ Try starting with a hook like:
 
           {/* Tips */}
           <div className="rounded-2xl bg-white border border-slate-200 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Lightbulb className="w-4 h-4 text-amber-500" />
-              <h4 className="text-sm font-semibold text-slate-900">AI Suggestions</h4>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-amber-500" />
+                <h4 className="text-sm font-semibold text-slate-900">AI Suggestions</h4>
+              </div>
+              {isScoringAI && <RefreshCw className="w-3.5 h-3.5 text-slate-400 animate-spin" />}
             </div>
             <div className="space-y-2">
-              {tips.map((tip, i) => (
-                <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-100">
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-amber-800 leading-relaxed">{tip}</p>
+              {tips.length > 0 ? (
+                tips.map((tip, i) => (
+                  <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-100">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-amber-800 leading-relaxed">{tip}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center p-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                  <Lightbulb className="w-5 h-5 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Start writing! Real-time AI feedback will appear here as you type to help optimize your content.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
