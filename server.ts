@@ -299,6 +299,45 @@ Example: ["Hook 1", "Hook 2", "Hook 3", "Hook 4", "Hook 5"]`;
     }
   });
 
+  app.post("/api/ai/milestone-briefing", async (req, res) => {
+    const { milestoneId, niche, brandProfile } = req.body;
+    try {
+      const prompt = `You are an expert Creator Coach guiding a new content creator through their journey.
+Their niche is: "${niche}".
+Their brand personality is: "${brandProfile?.personality || 'Authentic'}".
+
+The creator is currently focusing on the milestone: "${milestoneId}".
+The valid milestones are:
+- "week-1": First idea bank
+- "week-2": Publishing rhythm
+- "week-4": Monetization path
+- "month-2": First revenue signal
+
+Based on this specific milestone and their niche, provide a highly personalized briefing.
+Return ONLY a raw JSON object with the following fields:
+- "coachMessage" (string: A 2-3 sentence encouraging and strategic opening message from the coach)
+- "tips" (array of 3 strings: specific, actionable tips/tricks for this milestone tailored to their niche)
+- "pitfalls" (array of 2 strings: common mistakes to avoid during this phase)
+
+Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
+
+      const result = await getGeminiClient().models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+      
+      let jsonString = result.text ?? '';
+      const fenceMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) jsonString = fenceMatch[1].trim();
+
+      const briefing = JSON.parse(jsonString);
+      res.json(briefing);
+    } catch (error) {
+      console.error("AI Milestone Briefing Error:", error);
+      res.status(500).json({ error: "Failed to generate milestone briefing." });
+    }
+  });
+
   app.post("/api/ai/generate-content", async (req, res) => {
     const { prompt, niche, platform } = req.body;
     try {
