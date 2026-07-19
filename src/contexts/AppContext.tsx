@@ -292,10 +292,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (userData) {
       setUserProfile({
-        // Prefer the real Firebase identity over whatever the mock API returns.
-        id: firebaseUser?.uid || userData.id,
+        // Prefer the real backend identity over whatever the mock API returns.
+        id: firebaseUser?.id || userData.id,
         email: firebaseUser?.email || userData.email,
-        name: userData.name || firebaseUser?.displayName || '',
+        name: userData.name || firebaseUser?.name || '',
         niche: userData.niche || '',
         platforms: userData.platforms || [],
         monetizationGoal: userData.monetizationGoal || 'affiliate',
@@ -372,9 +372,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (firebaseUser) {
       setUserProfile(prev => ({
         ...prev,
-        id: firebaseUser.uid,
+        id: firebaseUser.id,
         email: firebaseUser.email || prev.email,
-        name: prev.name || firebaseUser.displayName || '',
+        name: prev.name || firebaseUser.name || '',
       }));
     } else {
       // Signed out — reset in-memory state back to defaults.

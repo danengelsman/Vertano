@@ -1,60 +1,85 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { loginWithGoogle } from '@/firebase';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
-import EarnestMark from './EarnestMark';
+import DoneByAILogo from './DoneByAILogo';
 
 /**
  * LoginScreen — the page people see when nobody is signed in.
  *
  * It's a full-screen welcome page with one button: "Sign in with Google".
- * Clicking it pops open Google's sign-in window. When sign-in succeeds,
- * Firebase updates its internal state, useAuth picks that up, and the app
- * swaps this screen out for the real dashboard.
+ * Clicking it asks our Express backend for a Google OAuth URL, opens Google's
+ * consent screen in a popup, and waits for the backend's callback page to
+ * postMessage OAUTH_AUTH_SUCCESS. At that point the session cookie is set, so
+ * we re-check /api/me via useAuth().refresh() and the app swaps this screen
+ * out for the real dashboard.
  */
 const LoginScreen: React.FC = () => {
   const [signingIn, setSigningIn] = useState(false);
+  const { refresh } = useAuth();
+
+  // Listen for the success message posted by /api/auth/google/callback.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        setSigningIn(false);
+        // Session cookie is now set server-side; re-check who we are.
+        refresh();
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [refresh]);
 
   const handleGoogle = async () => {
     setSigningIn(true);
     try {
-      await loginWithGoogle();
-      // On success, Firebase will flip auth state and the app will re-render.
-      // No need to navigate manually.
-    } catch (err: any) {
-      // If the user closes the Google popup, Firebase throws
-      // auth/popup-closed-by-user. We don't want to show a scary error for that.
-      const code = err?.code as string | undefined;
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        // User bailed out — that's fine, just reset the button.
-      } else {
-        console.error('Google sign-in failed:', err);
-        toast({
-          title: 'Sign-in failed',
-          description: err?.message || 'Something went wrong. Please try again.',
-          variant: 'destructive',
-        });
+      const res = await fetch('/api/auth/google/url', { credentials: 'include' });
+      if (!res.ok) throw new Error('Could not start Google sign-in');
+      const { url } = await res.json();
+
+      const popup = window.open(url, 'google-oauth', 'width=500,height=650');
+      if (!popup) {
+        // Popup blocked — fall back to a full-page redirect.
+        window.location.href = url;
+        return;
       }
-    } finally {
+
+      // If the user closes the popup without finishing, reset the button.
+      const poll = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(poll);
+          setSigningIn(false);
+          // They may have completed it; re-check just in case.
+          refresh();
+        }
+      }, 700);
+    } catch (err: any) {
+      console.error('Google sign-in failed:', err);
+      toast({
+        title: 'Sign-in failed',
+        description: err?.message || 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
       setSigningIn(false);
     }
   };
 
   return (
-    <div className="earnest-auth-shell min-h-screen flex items-center justify-center px-4 py-10">
-      <div className="earnest-auth-panel w-full max-w-md rounded-[2rem] border border-white/60 px-7 py-8 shadow-[0_32px_80px_rgba(23,20,17,0.14)] backdrop-blur-sm">
+    <div className="bg-background min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="bg-card w-full max-w-md rounded-2xl border border-border px-7 py-8 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
         <div className="mb-8 flex flex-col items-center text-center">
-          <EarnestMark className="mb-5" />
-          <h1 className="text-3xl font-display font-semibold tracking-[-0.05em] text-foreground">
-            From first post to first paycheck.
+          <DoneByAILogo className="mb-5" />
+          <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">
+            Automation for Professionals
           </h1>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Sign in to start with the platform that does not get paid until you do.
+            We make complex AI workflows feel as simple and reliable as native software. It just works, and it gets the job done.
           </p>
         </div>
 
-        <div className="space-y-4 rounded-[1.5rem] border border-border/70 bg-white/70 p-6 shadow-[0_12px_40px_rgba(23,20,17,0.06)]">
+        <div className="space-y-4">
           <Button
             onClick={handleGoogle}
             disabled={signingIn}

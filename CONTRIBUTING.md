@@ -1,6 +1,6 @@
-# Contributing to Vertano
+# Contributing to Done by AI
 
-Thank you for your interest in contributing to Vertano! We welcome contributions from the community and appreciate your help in making Vertano better.
+Thank you for your interest in contributing to Done by AI! We welcome contributions from the community and appreciate your help in making Done by AI better.
 
 ## How to Contribute
 
@@ -88,4 +88,4 @@ All pull requests require review before being merged. The review process include
 
 Feel free to open an issue with the "question" label, or reach out to the maintainers directly.
 
-Thank you for contributing to Vertano!
+Thank you for contributing to Done by AI!

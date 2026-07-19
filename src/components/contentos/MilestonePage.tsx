@@ -4,7 +4,7 @@ import { MILESTONES } from '@/lib/milestones';
 import { ArrowLeft, CheckCircle2, Circle, Lightbulb, AlertTriangle, Loader2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import axios from 'axios';
-import EarnestMark from './EarnestMark';
+import DoneByAILogo from './DoneByAILogo';
 import { toast } from '@/components/ui/use-toast';
 
 interface MilestoneBriefing {
@@ -89,7 +89,7 @@ const MilestonePage: React.FC<MilestonePageProps> = ({ milestoneId, onBack }) =>
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 flex-shrink-0 mt-1">
-                <EarnestMark className="w-full h-full text-indigo-600" />
+                <DoneByAILogo showWordmark={false} className="w-full h-full text-primary" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">Message from your Coach</h3>

@@ -21,96 +21,57 @@ export default {
     },
     extend: {
       colors: {
-        border: '214.3 31.8% 91.4%',
-        input: '214.3 31.8% 91.4%',
-        ring: '200 40% 30%',
-        background: '0 0% 100%',
-        foreground: '200 40% 10%',
-        // CreatorOS Palette
+        border: 'var(--border)',
+        input: 'var(--input)',
+        ring: 'var(--ring)',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
         primary: {
-          DEFAULT: '200 40% 30%', // Muted Blue-Green
-          foreground: '0 0% 98%', // Off-White
+          DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)',
         },
         secondary: {
-          DEFAULT: '30 20% 60%', // Warm Earthy Tan
-          foreground: '200 40% 10%', // Dark Blue-Green
+          DEFAULT: 'var(--secondary)',
+          foreground: 'var(--secondary-foreground)',
         },
         accent: {
-          DEFAULT: '35 80% 60%', // Muted Gold/Orange
-          foreground: '0 0% 100%', // White
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
         },
         destructive: {
-          DEFAULT: '0 84.2% 60.2%',
-          foreground: '210 40% 98%',
+          DEFAULT: 'var(--destructive)',
+          foreground: 'var(--destructive-foreground)',
+        },
+        success: {
+          DEFAULT: 'var(--success)',
+          foreground: 'var(--success-foreground)',
+        },
+        warning: {
+          DEFAULT: 'var(--warning)',
+          foreground: 'var(--warning-foreground)',
         },
         muted: {
-          DEFAULT: '210 40% 96.1%',
-          foreground: '215.4 16.3% 46.9%',
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
         },
         popover: {
-          DEFAULT: '0 0% 100%',
-          foreground: '222.2 47.4% 11.2%',
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
         },
         card: {
-          DEFAULT: '0 0% 100%',
-          foreground: '222.2 47.4% 11.2%',
-        },
-        // Explicit Dark Mode Colors
-        dark: {
-          border: '217.2 32.6% 17.5%',
-          input: '217.2 32.6% 17.5%',
-          ring: '200 40% 50%',
-          background: '222.2 47.4% 11.2%',
-          foreground: '0 0% 98%',
-          primary: {
-            DEFAULT: '200 40% 50%',
-            foreground: '222.2 47.4% 11.2%',
-          },
-          secondary: {
-            DEFAULT: '30 20% 40%',
-            foreground: '0 0% 98%',
-          },
-          accent: {
-            DEFAULT: '35 80% 50%',
-            foreground: '0 0% 100%',
-          },
-          destructive: {
-            DEFAULT: '0 62.8% 30.6%',
-            foreground: '210 40% 98%',
-          },
-          muted: {
-            DEFAULT: '217.2 32.6% 17.5%',
-            foreground: '215 20.2% 65.1%',
-          },
-          popover: {
-            DEFAULT: '222.2 47.4% 11.2%',
-            foreground: '0 0% 98%',
-          },
-          card: {
-            DEFAULT: '222.2 47.4% 11.2%',
-            foreground: '0 0% 98%',
-          },
-          sidebar: {
-            DEFAULT: '222.2 47.4% 11.2%',
-            foreground: '0 0% 98%',
-            primary: '200 40% 50%',
-            'primary-foreground': '222.2 47.4% 11.2%',
-            accent: '35 80% 50%',
-            'accent-foreground': '0 0% 100%',
-            border: '217.2 32.6% 17.5%',
-            ring: '200 40% 50%',
-          },
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--card-foreground)',
         },
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'monospace'],
-        sans: ['Inter', 'sans-serif'],
-        display: ['Geist', 'sans-serif'], // Adding a display font for headings, aiming for Rivian feel
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        lg: 'calc(var(--radius) + 2px)',
-        md: 'var(--radius)',
-        sm: 'calc(var(--radius) - 2px)'
+        lg: '12px',
+        md: '10px',
+        sm: '8px'
       },
       keyframes: {
         'accordion-down': {
@@ -129,12 +90,17 @@ export default {
           from: { transform: 'translateY(10px)', opacity: '0' },
           to: { transform: 'translateY(0)', opacity: '1' },
         },
+        blink: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in': 'fade-in 0.3s ease-out',
         'slide-in': 'slide-in 0.3s ease-out',
+        blink: 'blink 1s step-start infinite',
       },
       typography: {
         DEFAULT: {

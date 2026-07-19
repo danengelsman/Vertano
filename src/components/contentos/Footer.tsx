@@ -1,5 +1,5 @@
 import React from 'react';
-import EarnestMark from './EarnestMark';
+import DoneByAILogo from './DoneByAILogo';
 import { useAppContext, ActiveView } from '@/contexts/AppContext';
 import { toast } from '@/components/ui/use-toast';
 
@@ -47,7 +47,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
             <div className="mb-4">
-              <EarnestMark />
+              <DoneByAILogo />
             </div>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
               The creator platform that stays aligned with you until the work starts paying back.

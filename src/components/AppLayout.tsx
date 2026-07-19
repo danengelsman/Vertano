@@ -56,8 +56,7 @@ const AppLayout: React.FC = () => {
   // Step 3: signed in — show the real app.
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(198,146,43,0.08),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,0))]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[linear-gradient(180deg,rgba(245,240,232,0.55),transparent)]" />
+
       {/* Modals */}
       <OnboardingModal />
       <AuthModal />

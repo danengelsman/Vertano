@@ -34,10 +34,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-10">
-      <section className="relative overflow-hidden rounded-[2.25rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(245,240,232,0.9))] p-7 shadow-[0_30px_90px_rgba(23,20,17,0.08)] lg:p-9">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(198,146,43,0.14),transparent_28%)]" />
-        <div className="absolute inset-y-0 right-0 hidden w-[34%] border-l border-border/50 bg-[linear-gradient(180deg,rgba(23,20,17,0.96),rgba(37,30,24,0.92))] lg:block" />
-        <div className="absolute left-8 top-0 h-px w-48 bg-[rgba(255,255,255,0.9)]" />
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-7 shadow-sm lg:p-9">
         <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_340px] lg:items-start">
           <div className="max-w-3xl">
             <div className="mb-4 flex items-center gap-2 text-sm font-medium text-primary">
@@ -46,7 +43,7 @@ const Dashboard: React.FC = () => {
                 {streak.current > 0 ? `${streak.current}-day streak!` : 'Day 1 starts now'}
               </span>
             </div>
-            <h1 className="text-3xl font-display font-semibold tracking-[-0.05em] text-foreground lg:text-5xl">
+            <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground lg:text-5xl">
               Welcome back, {userProfile.name || 'Creator'}
             </h1>
             <p className="mt-3 max-w-2xl text-base leading-8 text-muted-foreground lg:text-lg">
@@ -58,70 +55,70 @@ const Dashboard: React.FC = () => {
             <div className="mt-7 flex flex-wrap gap-3">
               <Button
                 onClick={() => setActiveView('editor')}
-                className="h-11 rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/92"
+                className="h-11 rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/90"
               >
-                <PenTool className="w-4 h-4" /> Create Content
+                <PenTool className="w-4 h-4 mr-2" /> Create Content
               </Button>
               <Button
                 onClick={() => setActiveView('roadmap')}
                 variant="outline"
-                className="h-11 rounded-full border-border bg-white/70 px-6 text-foreground hover:bg-white"
+                className="h-11 rounded-full border-border bg-background px-6 text-foreground hover:bg-muted"
               >
-                <Rocket className="w-4 h-4" /> View Roadmap
+                <Rocket className="w-4 h-4 mr-2" /> View Roadmap
               </Button>
             </div>
           </div>
 
-          <aside className="relative grid gap-4 rounded-[1.8rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.04))] p-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <aside className="relative grid gap-4 rounded-xl border border-border bg-secondary p-5 text-foreground shadow-sm">
             <div>
-              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[rgba(255,255,255,0.48)]">Today</p>
-              <h2 className="mt-3 text-2xl font-display font-semibold tracking-[-0.05em]">Operator panel</h2>
-              <p className="mt-2 text-sm leading-6 text-[rgba(255,255,255,0.62)]">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Today</p>
+              <h2 className="mt-3 text-2xl font-display font-semibold tracking-tight">Operator panel</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Keep the next move visible. This side stays practical while the rest of the dashboard handles context.
               </p>
             </div>
             <div className="grid gap-3">
               {heroStats.map((item) => (
-                <div key={item.label} className="rounded-[1.35rem] border border-white/10 bg-white/6 p-4">
+                <div key={item.label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-[rgba(255,255,255,0.7)]">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/8 text-[#E0B75A]">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                         {item.icon}
                       </span>
                       <span className="text-xs font-medium">{item.label}</span>
                     </div>
-                    <span className="text-lg font-display font-semibold tracking-[-0.04em]">{item.value}</span>
+                    <span className="text-lg font-display font-semibold tracking-tight text-foreground">{item.value}</span>
                   </div>
-                  <p className="mt-3 text-xs text-[rgba(255,255,255,0.52)]">{item.note}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">{item.note}</p>
                 </div>
               ))}
             </div>
             <div className="grid gap-3">
               <button
-                className="group flex items-center gap-4 rounded-[1.4rem] border border-white/10 bg-white/6 p-4 text-left transition-colors hover:bg-white/10"
+                className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted shadow-sm"
                 onClick={() => setActiveView('editor')}
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[#E0B75A]/16 text-[#E0B75A]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <PenTool className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Open content studio</p>
-                  <p className="text-xs text-[rgba(255,255,255,0.55)]">Draft, score, and publish your next piece.</p>
+                  <p className="text-sm font-semibold text-foreground">Open content studio</p>
+                  <p className="text-xs text-muted-foreground">Draft, score, and publish your next piece.</p>
                 </div>
-                <ChevronRight className="ml-auto h-4 w-4 text-[rgba(255,255,255,0.45)] transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
               </button>
               <button
-                className="group flex items-center gap-4 rounded-[1.4rem] border border-white/10 bg-white/6 p-4 text-left transition-colors hover:bg-white/10"
+                className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted shadow-sm"
                 onClick={() => setActiveView('roadmap')}
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-white/8 text-white">
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-secondary text-foreground border border-border">
                   <Clock className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Review today&apos;s plan</p>
-                  <p className="text-xs text-[rgba(255,255,255,0.55)]">Check your next challenge and monetization path.</p>
+                  <p className="text-sm font-semibold text-foreground">Review today's plan</p>
+                  <p className="text-xs text-muted-foreground">Check your next challenge and monetization path.</p>
                 </div>
-                <ChevronRight className="ml-auto h-4 w-4 text-[rgba(255,255,255,0.45)] transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
               </button>
             </div>
           </aside>

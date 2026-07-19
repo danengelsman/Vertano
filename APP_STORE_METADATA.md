@@ -4,8 +4,8 @@
 
 | Field | Value |
 |-------|-------|
-| **App Name** | Vertano |
-| **Bundle ID** | com.vertano.app (pending) |
+| **App Name** | Done by AI |
+| **Bundle ID** | com.Done by AI.app (pending) |
 | **Primary Language** | English |
 | **Version Number** | 0.0.1 |
 | **Build Number** | 1 |
@@ -13,9 +13,9 @@
 
 ## App Description
 
-**Vertano** is the truth engine for building your content empire. This step-by-step content creation system helps beginners build YouTube channels, grow audiences, and monetize their content.
+**Done by AI** is the truth engine for building your content empire. This step-by-step content creation system helps beginners build YouTube channels, grow audiences, and monetize their content.
 
-With structured sprints, milestone tracking, and gamification, Vertano turns content dreams into measurable results. Whether you're just starting or looking to scale, Vertano provides the tools and guidance to help you succeed.
+With structured sprints, milestone tracking, and gamification, Done by AI turns content dreams into measurable results. Whether you're just starting or looking to scale, Done by AI provides the tools and guidance to help you succeed.
 
 ### Key Features:
 - SprintBuilder: Create focused content campaigns with daily tasks
@@ -48,15 +48,15 @@ Required screenshots for iPhone (6.1" and 6.7" display):
 
 ## Privacy Policy URL
 
-https://github.com/danengelsman/Vertano/blob/master/PRIVACY_POLICY.md
+https://github.com/danengelsman/Done by AI/blob/master/PRIVACY_POLICY.md
 
 ## Support URL
 
-https://github.com/danengelsman/Vertano/issues
+https://github.com/danengelsman/Done by AI/issues
 
 ## Marketing URL
 
-https://vertano.app (pending domain setup)
+https://Done by AI.app (pending domain setup)
 
 ## Export Compliance
 
@@ -65,7 +65,7 @@ This app does not contain encryption. Export compliance is not required.
 ## In-App Purchases
 
 None at launch. Future versions may include:
-- Vertano Pro subscription ($4.99/month)
+- Done by AI Pro subscription ($4.99/month)
 - Premium templates and assets
 - Advanced analytics features
 

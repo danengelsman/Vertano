@@ -4,11 +4,11 @@
 
 ## 1. Acceptance of Terms
 
-By accessing or using Vertano, a content creation platform, you agree to be bound by these Terms of Service ("Terms") and our Privacy Policy. If you do not agree to all the terms, you may not access or use our services.
+By accessing or using Done by AI, a content creation platform, you agree to be bound by these Terms of Service ("Terms") and our Privacy Policy. If you do not agree to all the terms, you may not access or use our services.
 
 ## 2. Description of Service
 
-Vertano provides a platform for planning, creating, and tracking content for YouTube channels and other social media. Our services include:
+Done by AI provides a platform for planning, creating, and tracking content for YouTube channels and other social media. Our services include:
 
 - Sprint planning and milestone tracking tools
 - Content creation workflows and best practices
@@ -18,7 +18,7 @@ Vertano provides a platform for planning, creating, and tracking content for You
 
 ## 3. User Accounts
 
-To use certain features of Vertano, you must register for an account. You agree to:
+To use certain features of Done by AI, you must register for an account. You agree to:
 
 - Provide accurate and complete information during registration
 - Maintain the security of your account credentials
@@ -28,10 +28,10 @@ To use certain features of Vertano, you must register for an account. You agree 
 ## 4. User Content
 
 ### Ownership
-You retain ownership of all content you submit to Vertano ("User Content").
+You retain ownership of all content you submit to Done by AI ("User Content").
 
 ### License to Us
-By submitting User Content, you grant Vertano a worldwide, non-exclusive, royalty-free license to:
+By submitting User Content, you grant Done by AI a worldwide, non-exclusive, royalty-free license to:
 
 - Use, reproduce, modify, and distribute your User Content solely to provide our services
 - Display your User Content within the app for your personal use
@@ -59,7 +59,7 @@ You agree not to:
 ## 6. Intellectual Property
 
 ### Our Content
-All content, features, and functionality of Vertano, including but not limited to text, graphics, logos, icons, images, audio clips, and software, are the property of Vertano or its licensors and are protected by copyright, trademark, and other intellectual property laws.
+All content, features, and functionality of Done by AI, including but not limited to text, graphics, logos, icons, images, audio clips, and software, are the property of Done by AI or its licensors and are protected by copyright, trademark, and other intellectual property laws.
 
 ### Feedback
 If you provide us with feedback or suggestions, you hereby assign to us all rights in such feedback without compensation to you.
@@ -74,11 +74,11 @@ THE SERVICES ARE PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. WE DISCLAIM AL
 
 ## 9. Limitation of Liability
 
-TO THE FULLEST EXTENT PERMITTED BY LAW, IN NO EVENT SHALL VERTANO BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR USE, ARISING OUT OF OR RELATED TO THESE TERMS OR YOUR USE OF THE SERVICES.
+TO THE FULLEST EXTENT PERMITTED BY LAW, IN NO EVENT SHALL Done by AI BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR USE, ARISING OUT OF OR RELATED TO THESE TERMS OR YOUR USE OF THE SERVICES.
 
 ## 10. Indemnification
 
-You agree to indemnify, defend, and hold harmless Vertano and its affiliates from and against any claims, liabilities, damages, losses, and expenses arising out of or in any way connected with your access to or use of the services, your violation of these Terms, or your User Content.
+You agree to indemnify, defend, and hold harmless Done by AI and its affiliates from and against any claims, liabilities, damages, losses, and expenses arising out of or in any way connected with your access to or use of the services, your violation of these Terms, or your User Content.
 
 ## 11. Termination
 
@@ -92,5 +92,5 @@ These Terms shall be governed by and construed in accordance with the laws of th
 
 If you have any questions about these Terms, please contact us at:
 
-**Email:** terms@vertano.app  
-**Website:** https://vertano.app/contact
+**Email:** terms@Done by AI.app  
+**Website:** https://Done by AI.app/contact

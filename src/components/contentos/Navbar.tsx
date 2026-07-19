@@ -7,7 +7,7 @@ import {
   LayoutDashboard, PenTool, Map, Users, BarChart3,
   Menu, X, Zap, Bell, LogOut, User as UserIcon
 } from 'lucide-react';
-import EarnestMark from './EarnestMark';
+import DoneByAILogo from './DoneByAILogo';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -46,9 +46,9 @@ const Navbar: React.FC = () => {
   };
 
   // Build a simple set of initials from the display name / email for the
-  // avatar fallback (used when we don't have a photoURL).
+  // avatar fallback (used when we don't have a picture).
   const initials = (() => {
-    const source = user?.displayName || user?.email || '';
+    const source = user?.name || user?.email || '';
     if (!source) return 'U';
     const parts = source.split(/\s+|@/).filter(Boolean);
     const first = parts[0]?.[0] || '';
@@ -65,8 +65,8 @@ const Navbar: React.FC = () => {
             {sidebarOpen ? <X className="w-5 h-5 text-foreground" /> : <Menu className="w-5 h-5 text-foreground" />}
           </button>
           <button className="cursor-pointer" onClick={() => setActiveView('dashboard')}>
-            <EarnestMark
-              iconClassName="h-9 w-9 rounded-[0.95rem] shadow-[0_10px_24px_rgba(23,20,17,0.14)]"
+            <DoneByAILogo
+              iconClassName="h-9 w-9"
               labelClassName="hidden sm:flex"
             />
           </button>
@@ -151,10 +151,10 @@ const Navbar: React.FC = () => {
                 className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground font-semibold text-sm shadow-sm hover:shadow-md transition-shadow overflow-hidden"
                 aria-label="Open user menu"
               >
-                {user?.photoURL ? (
+                {user?.picture ? (
                   <img
-                    src={user.photoURL}
-                    alt={user.displayName || user.email || 'User'}
+                    src={user.picture}
+                    alt={user.name || user.email || 'User'}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -167,7 +167,7 @@ const Navbar: React.FC = () => {
               <DropdownMenuLabel>
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold text-foreground truncate">
-                    {user?.displayName || 'Signed in'}
+                    {user?.name || 'Signed in'}
                   </span>
                   {user?.email && (
                     <span className="text-xs text-muted-foreground truncate">{user.email}</span>

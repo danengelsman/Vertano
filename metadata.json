@@ -1,8 +1,9 @@
 {
-  "name": "CreatorOS",
+  "name": "Done by AI",
   "description": "The operating system for creators. Go from zero to your first dollar with AI coaching, branding, and content automation.",
   "requestFramePermissions": [
     "camera",
     "microphone"
   ]
 }
+

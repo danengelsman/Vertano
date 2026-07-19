@@ -1,11 +1,12 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import db from "./src/db.js";
+import { supabase } from "./src/db.ts";
 import { v4 as uuidv4 } from 'uuid';
 import path from "path";
 import fs from "fs";
 import { google } from 'googleapis';
 import cookieParser from 'cookie-parser';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import { fileURLToPath } from 'url';
@@ -17,6 +18,17 @@ function getGeminiClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set in .env');
   return new GoogleGenAI({ apiKey });
+}
+
+// Augment Express's Request type so handlers can read req.userId after
+// requireAuth has run, without losing the native body/params/cookies members.
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      userId?: string;
+    }
+  }
 }
 
 const oauth2Client = new google.auth.OAuth2(
@@ -56,31 +68,85 @@ async function startServer() {
   app.use(express.json());
   app.use(cookieParser());
 
-  // API Routes
+  // --- Session / Auth ---
+  // We identify a logged-in user with a signed cookie carrying their user id.
+  // The cookie is HMAC-signed so it can't be forged client-side. This is a
+  // deliberately small, dependency-light session scheme; it keeps identity
+  // (who you are) cleanly separate from the SQLite data layer, so swapping the
+  // storage backend later (e.g. Supabase) doesn't touch the login contract.
+  const SESSION_COOKIE = 'dba_session';
+  const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-session-secret-change-me';
 
-  // User Management (Simple mock for now, using a default user ID)
-  const DEFAULT_USER_ID = 'user_123';
-
-  // Ensure default user exists
-  const userExists = db.prepare('SELECT id FROM users WHERE id = ?').get(DEFAULT_USER_ID);
-  if (!userExists) {
-    db.prepare('INSERT INTO users (id, email) VALUES (?, ?)').run(DEFAULT_USER_ID, 'creator@example.com');
+  function signSession(userId: string): string {
+    const payload = Buffer.from(userId).toString('base64url');
+    const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+    return `${payload}.${sig}`;
   }
 
-  app.get("/api/user", (req, res) => {
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(DEFAULT_USER_ID);
+  function verifySession(token: string | undefined): string | null {
+    if (!token) return null;
+    const [payload, sig] = token.split('.');
+    if (!payload || !sig) return null;
+    const expected = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+    // Constant-time compare to avoid timing leaks.
+    const a = Buffer.from(sig);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+    return Buffer.from(payload, 'base64url').toString('utf8');
+  }
+
+  function setSessionCookie(res: express.Response, userId: string) {
+    res.cookie(SESSION_COOKIE, signSession(userId), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+    });
+  }
+
+  // Extend Express's Request with the resolved user id for typed access.
+  // (Module augmentation lives at top-level below; see `declare global`.)
+
+  // Gate: rejects unauthenticated requests. Attaches req.userId on success.
+  function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const userId = verifySession(req.cookies?.[SESSION_COOKIE]);
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+    req.userId = userId;
+    next();
+  }
+
+  // Find an existing user by Google identity, or create one. Returns the user id.
+  function upsertUserFromGoogle(profile: { id?: string | null; email?: string | null; name?: string | null; picture?: string | null }): string {
+    const email = profile.email || null;
+    // Prefer matching on email so re-logins map to the same account.
+    const existing = email
+      ? (db.prepare('SELECT id FROM users WHERE email = ?').get(email) as { id: string } | undefined)
+      : undefined;
+    if (existing) {
+      db.prepare('UPDATE users SET name = ?, picture = ? WHERE id = ?')
+        .run(profile.name || null, profile.picture || null, existing.id);
+      return existing.id;
+    }
+    const id = `user_${profile.id || uuidv4()}`;
+    db.prepare('INSERT INTO users (id, email, name, picture) VALUES (?, ?, ?, ?)')
+      .run(id, email, profile.name || null, profile.picture || null);
+    return id;
+  }
+
+  app.get("/api/user", requireAuth, (req, res) => {
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
     res.json(user);
   });
 
-  app.get("/api/brand", (req, res) => {
-    const brand = db.prepare('SELECT * FROM brands WHERE user_id = ?').get(DEFAULT_USER_ID);
+  app.get("/api/brand", requireAuth, (req, res) => {
+    const brand = db.prepare('SELECT * FROM brands WHERE user_id = ?').get(req.userId);
     res.json(brand || null);
   });
 
-  app.post("/api/brand", (req, res) => {
+  app.post("/api/brand", requireAuth, (req, res) => {
     const { name, tagline, archetype, personality, colors, typography, visual_style, thumbnail_style, content_hooks, catchphrases } = req.body;
 
-    const existing = db.prepare('SELECT user_id FROM brands WHERE user_id = ?').get(DEFAULT_USER_ID);
+    const existing = db.prepare('SELECT user_id FROM brands WHERE user_id = ?').get(req.userId);
 
     if (existing) {
       db.prepare(`
@@ -89,35 +155,35 @@ async function startServer() {
           colors = ?, typography = ?, visual_style = ?, 
           thumbnail_style = ?, content_hooks = ?, catchphrases = ?
         WHERE user_id = ?
-      `).run(name, tagline, archetype, personality, JSON.stringify(colors), JSON.stringify(typography), visual_style, thumbnail_style, JSON.stringify(content_hooks), JSON.stringify(catchphrases), DEFAULT_USER_ID);
+      `).run(name, tagline, archetype, personality, JSON.stringify(colors), JSON.stringify(typography), visual_style, thumbnail_style, JSON.stringify(content_hooks), JSON.stringify(catchphrases), req.userId);
     } else {
       db.prepare(`
         INSERT INTO brands (user_id, name, tagline, archetype, personality, colors, typography, visual_style, thumbnail_style, content_hooks, catchphrases)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(DEFAULT_USER_ID, name, tagline, archetype, personality, JSON.stringify(colors), JSON.stringify(typography), visual_style, thumbnail_style, JSON.stringify(content_hooks), JSON.stringify(catchphrases));
+      `).run(req.userId, name, tagline, archetype, personality, JSON.stringify(colors), JSON.stringify(typography), visual_style, thumbnail_style, JSON.stringify(content_hooks), JSON.stringify(catchphrases));
     }
 
     res.json({ success: true });
   });
 
-  app.get("/api/content", (req, res) => {
-    const content = db.prepare('SELECT * FROM content WHERE user_id = ? ORDER BY created_at DESC').all(DEFAULT_USER_ID);
+  app.get("/api/content", requireAuth, (req, res) => {
+    const content = db.prepare('SELECT * FROM content WHERE user_id = ? ORDER BY created_at DESC').all(req.userId);
     res.json(content);
   });
 
-  app.post("/api/content", (req, res) => {
+  app.post("/api/content", requireAuth, (req, res) => {
     const { title, body, type, platform, score, score_feedback } = req.body;
     const id = uuidv4();
 
     db.prepare(`
       INSERT INTO content (id, user_id, title, body, type, platform, status, score, score_feedback)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, DEFAULT_USER_ID, title, body, type, platform, 'draft', score, score_feedback);
+    `).run(id, req.userId, title, body, type, platform, 'draft', score, score_feedback);
 
     res.json({ id });
   });
 
-  app.put("/api/content/:id", (req, res) => {
+  app.put("/api/content/:id", requireAuth, (req, res) => {
     const { id } = req.params;
     const { title, body, type, platform, score, score_feedback, status } = req.body;
 
@@ -126,31 +192,31 @@ async function startServer() {
         title = ?, body = ?, type = ?, platform = ?, status = ?,
         score = ?, score_feedback = ?
       WHERE id = ? AND user_id = ?
-    `).run(title, body, type, platform, status, score, score_feedback, id, DEFAULT_USER_ID);
+    `).run(title, body, type, platform, status, score, score_feedback, id, req.userId);
 
     res.json({ success: true });
   });
 
-  app.delete("/api/content/:id", (req, res) => {
+  app.delete("/api/content/:id", requireAuth, (req, res) => {
     const { id } = req.params;
 
-    db.prepare('DELETE FROM content WHERE id = ? AND user_id = ?').run(id, DEFAULT_USER_ID);
+    db.prepare('DELETE FROM content WHERE id = ? AND user_id = ?').run(id, req.userId);
 
     res.json({ success: true });
   });
 
-  app.post("/api/content/:id/publish", (req, res) => {
+  app.post("/api/content/:id/publish", requireAuth, (req, res) => {
     const { id } = req.params;
     const now = new Date().toISOString();
 
     db.prepare('UPDATE content SET status = ?, published = ?, published_at = ? WHERE id = ? AND user_id = ?')
-      .run('published', 1, now, id, DEFAULT_USER_ID);
+      .run('published', 1, now, id, req.userId);
 
     // Update streak
-    const streakData = db.prepare('SELECT * FROM streaks WHERE user_id = ?').get(DEFAULT_USER_ID) as StreakRow | undefined;
+    const streakData = db.prepare('SELECT * FROM streaks WHERE user_id = ?').get(req.userId) as StreakRow | undefined;
     if (!streakData) {
       db.prepare('INSERT INTO streaks (user_id, current, longest, last_publish_date, total_published) VALUES (?, ?, ?, ?, ?)')
-        .run(DEFAULT_USER_ID, 1, 1, now, 1);
+        .run(req.userId, 1, 1, now, 1);
     } else {
       const lastPublish = new Date(streakData.last_publish_date);
       const today = new Date();
@@ -168,23 +234,23 @@ async function startServer() {
         newCurrentStreak = 1;
       }
       db.prepare('UPDATE streaks SET current = ?, longest = MAX(longest, ?), last_publish_date = ?, total_published = total_published + 1 WHERE user_id = ?')
-        .run(newCurrentStreak, newCurrentStreak, now, DEFAULT_USER_ID);
+        .run(newCurrentStreak, newCurrentStreak, now, req.userId);
     }
 
     res.json({ success: true });
   });
 
-  app.post("/api/challenge/:day/complete", (req, res) => {
+  app.post("/api/challenge/:day/complete", requireAuth, (req, res) => {
     const { day } = req.params;
     db.prepare('UPDATE challenges SET completed_days = json_insert(completed_days, ?, 1) WHERE user_id = ?')
-      .run('$.' + day, DEFAULT_USER_ID);
+      .run('$.' + day, req.userId);
 
     res.json({ success: true });
   });
 
   // --- AI Endpoints ---
 
-  app.post("/api/ai/onboarding-chat", async (req, res) => {
+  app.post("/api/ai/onboarding-chat", requireAuth, async (req, res) => {
     const { messages } = req.body; 
     
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -230,7 +296,7 @@ COACH:`;
     }
   });
 
-  app.post("/api/ai/generate-branding", async (req, res) => {
+  app.post("/api/ai/generate-branding", requireAuth, async (req, res) => {
     const { niche, transcript } = req.body;
     try {
       const prompt = `Based on the following conversation with a new creator, and their chosen niche of "${niche}", generate a complete brand profile for them.
@@ -265,7 +331,7 @@ ${transcript}`;
     }
   });
 
-  app.post("/api/ai/generate-hooks", async (req, res) => {
+  app.post("/api/ai/generate-hooks", requireAuth, async (req, res) => {
     const { niche, platform, brandProfile } = req.body;
     try {
       const prompt = `You are an expert viral content strategist for ${platform}.
@@ -299,7 +365,7 @@ Example: ["Hook 1", "Hook 2", "Hook 3", "Hook 4", "Hook 5"]`;
     }
   });
 
-  app.post("/api/ai/milestone-briefing", async (req, res) => {
+  app.post("/api/ai/milestone-briefing", requireAuth, async (req, res) => {
     const { milestoneId, niche, brandProfile } = req.body;
     try {
       const prompt = `You are an expert Creator Coach guiding a new content creator through their journey.
@@ -338,7 +404,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     }
   });
 
-  app.post("/api/ai/generate-content", async (req, res) => {
+  app.post("/api/ai/generate-content", requireAuth, async (req, res) => {
     const { prompt, niche, platform } = req.body;
     try {
       const result = await getGeminiClient().models.generateContent({
@@ -353,7 +419,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     }
   });
 
-  app.post("/api/ai/score-content", async (req, res) => {
+  app.post("/api/ai/score-content", requireAuth, async (req, res) => {
     const { content } = req.body;
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return res.status(400).json({ score: 0, feedback: "No content provided to score." });
@@ -399,14 +465,14 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     }
   });
 
-  app.get("/api/analytics", (req, res) => {
-    const analytics = db.prepare('SELECT * FROM analytics WHERE user_id = ? ORDER BY date ASC').all(DEFAULT_USER_ID);
+  app.get("/api/analytics", requireAuth, (req, res) => {
+    const analytics = db.prepare('SELECT * FROM analytics WHERE user_id = ? ORDER BY date ASC').all(req.userId);
     res.json(analytics);
   });
 
-  app.get("/api/habits", (req, res) => {
-    const streak = db.prepare('SELECT * FROM streaks WHERE user_id = ?').get(DEFAULT_USER_ID);
-    const challenge = db.prepare('SELECT * FROM challenges WHERE user_id = ?').get(DEFAULT_USER_ID);
+  app.get("/api/habits", requireAuth, (req, res) => {
+    const streak = db.prepare('SELECT * FROM streaks WHERE user_id = ?').get(req.userId);
+    const challenge = db.prepare('SELECT * FROM challenges WHERE user_id = ?').get(req.userId);
     res.json({ streak, challenge });
   });
 
@@ -425,6 +491,22 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     res.json({ url });
   });
 
+  // Who am I? Returns the logged-in user or 401. The frontend calls this on
+  // load to decide between the login screen and the app.
+  app.get("/api/me", (req, res) => {
+    const userId = verifySession(req.cookies?.[SESSION_COOKIE]);
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+    const user = db.prepare('SELECT id, email, name, picture FROM users WHERE id = ?').get(userId);
+    if (!user) return res.status(401).json({ error: 'Not authenticated' });
+    res.json(user);
+  });
+
+  // Log out: clear the session cookie. Client should then show the login screen.
+  app.post("/api/logout", (req, res) => {
+    res.clearCookie(SESSION_COOKIE);
+    res.json({ success: true });
+  });
+
   app.get("/api/auth/google/callback", async (req, res) => {
     const { code } = req.query;
     try {
@@ -433,10 +515,24 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
 
       const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
       const userInfo = await oauth2.userinfo.get();
+      const profile = userInfo.data;
 
-      // Save to DB
+      // 1) LOGIN: resolve (or create) the real user from their Google identity,
+      //    then issue a signed session cookie so subsequent /api/* requests are
+      //    authenticated as this person rather than a shared default user.
+      const userId = upsertUserFromGoogle({
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        picture: profile.picture,
+      });
+      setSessionCookie(res, userId);
+
+      // 2) ACCOUNT LINK: persist the YouTube OAuth tokens against this user so
+      //    publishing/analytics can act on their channel. Same Google consent
+      //    covers both because we request the youtube + profile scopes together.
       const existing = db.prepare('SELECT user_id FROM user_accounts WHERE user_id = ? AND platform = ?')
-        .get(DEFAULT_USER_ID, 'youtube');
+        .get(userId, 'youtube');
 
       if (existing) {
         db.prepare(`
@@ -447,8 +543,8 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           tokens.access_token,
           tokens.refresh_token || null,
           tokens.expiry_date,
-          JSON.stringify(userInfo.data),
-          DEFAULT_USER_ID,
+          JSON.stringify(profile),
+          userId,
           'youtube'
         );
       } else {
@@ -456,12 +552,12 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           INSERT INTO user_accounts (user_id, platform, access_token, refresh_token, expiry_date, profile_data)
           VALUES (?, ?, ?, ?, ?, ?)
         `).run(
-          DEFAULT_USER_ID,
+          userId,
           'youtube',
           tokens.access_token,
           tokens.refresh_token,
           tokens.expiry_date,
-          JSON.stringify(userInfo.data)
+          JSON.stringify(profile)
         );
       }
 
@@ -487,18 +583,18 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     }
   });
 
-  app.get("/api/accounts", (req, res) => {
-    const accounts = db.prepare('SELECT platform, profile_data FROM user_accounts WHERE user_id = ?').all(DEFAULT_USER_ID) as AccountSummaryRow[];
+  app.get("/api/accounts", requireAuth, (req, res) => {
+    const accounts = db.prepare('SELECT platform, profile_data FROM user_accounts WHERE user_id = ?').all(req.userId) as AccountSummaryRow[];
     res.json(accounts.map(a => ({
       platform: a.platform,
       profile: JSON.parse(a.profile_data)
     })));
   });
 
-  app.post("/api/publish/youtube", async (req, res) => {
+  app.post("/api/publish/youtube", requireAuth, async (req, res) => {
     const { title, description, videoUrl } = req.body;
 
-    const account = db.prepare('SELECT * FROM user_accounts WHERE user_id = ? AND platform = ?').get(DEFAULT_USER_ID, 'youtube') as UserAccountRow | undefined;
+    const account = db.prepare('SELECT * FROM user_accounts WHERE user_id = ? AND platform = ?').get(req.userId, 'youtube') as UserAccountRow | undefined;
     if (!account) return res.status(401).json({ error: 'YouTube account not connected' });
 
     try {
@@ -536,8 +632,8 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     }
   });
 
-  app.get("/api/analytics/youtube", async (req, res) => {
-    const account = db.prepare('SELECT * FROM user_accounts WHERE user_id = ? AND platform = ?').get(DEFAULT_USER_ID, 'youtube') as UserAccountRow | undefined;
+  app.get("/api/analytics/youtube", requireAuth, async (req, res) => {
+    const account = db.prepare('SELECT * FROM user_accounts WHERE user_id = ? AND platform = ?').get(req.userId, 'youtube') as UserAccountRow | undefined;
     if (!account) return res.json({ views: 0, subscribers: 0 });
 
     try {
@@ -583,7 +679,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta name="google-site-verification" content="ZMH-pcv71VbShROkNGynDJHXieEDPxQwx2tUiSTuFuA">
-          <title>Privacy Policy | CreatorOS</title>
+          <title>Privacy Policy | Done by AI</title>
           <style>
               body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
               h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -596,7 +692,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           <h2>1. Information We Collect</h2>
           <p>We collect information you provide directly to us when you create an account, such as your name and email address. When you use our AI services, we may also collect the prompts and content you generate.</p>
           <h2>2. Google OAuth and YouTube Data</h2>
-          <p>CreatorOS uses Google OAuth to allow you to connect your YouTube channel. We only request the minimum permissions necessary to upload videos and retrieve channel analytics. We do not store your Google password. Your YouTube data is used solely to provide the features of the app and is not shared with third parties.</p>
+          <p>Done by AI uses Google OAuth to allow you to connect your YouTube channel. We only request the minimum permissions necessary to upload videos and retrieve channel analytics. We do not store your Google password. Your YouTube data is used solely to provide the features of the app and is not shared with third parties.</p>
           <h2>3. How We Use Your Information</h2>
           <p>We use the information we collect to provide, maintain, and improve our services, including AI-driven branding and content generation features.</p>
           <p><a href="/">Back to Home</a></p>
@@ -613,7 +709,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta name="google-site-verification" content="ZMH-pcv71VbShROkNGynDJHXieEDPxQwx2tUiSTuFuA">
-          <title>Terms of Service | CreatorOS</title>
+          <title>Terms of Service | Done by AI</title>
           <style>
               body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
               h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -624,7 +720,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           <h1>Terms of Service</h1>
           <p>Last Updated: March 28, 2026</p>
           <h2>1. Acceptance of Terms</h2>
-          <p>By accessing or using CreatorOS, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+          <p>By accessing or using Done by AI, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
           <h2>2. AI-Generated Content</h2>
           <p>While you own the content you generate, you acknowledge that AI-generated content may not be unique and that other users may generate similar content.</p>
           <p><a href="/">Back to Home</a></p>

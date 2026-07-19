@@ -1,8 +1,12 @@
-# Vertano
+# Done by AI
 
 **The truth engine for building your content empire.**
 
-Vertano is a step-by-step content creation system that helps beginners build YouTube channels, grow audiences, and monetize their content. Through structured sprints, milestone tracking, and gamification, Vertano turns content dreams into measurable results.
+Done by AI is a step-by-step content creation system that helps beginners build YouTube channels, grow audiences, and monetize their content. Through structured sprints, milestone tracking, and gamification, Done by AI turns content dreams into measurable results.
+
+## 🤖 Working on this repo (read first)
+
+Before any UI, landing-page, or onboarding work, read **VERTANO-BUILD-LOG.md** — the locked design decisions and reasoning. Full build brief: **VERTANO-UI-OVERHAUL-PROMPT.md**. Live-generation system prompt: **VERTANO-EDGE-FUNCTION-PROMPT.md**.
 
 ## ✨ Features
 
@@ -24,8 +28,8 @@ Vertano is a step-by-step content creation system that helps beginners build You
 
 ```bash
 # Clone the repository
-git clone https://github.com/danengelsman/Vertano.git
-cd Vertano
+git clone https://github.com/danengelsman/Done by AI.git
+cd Done by AI
 
 # Install dependencies
 npm install
@@ -77,4 +81,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-**Vertano** means "true" in Italian. Build your content empire with truth, iteration, and measurable progress.
+**Done by AI** means "true" in Italian. Build your content empire with truth, iteration, and measurable progress.

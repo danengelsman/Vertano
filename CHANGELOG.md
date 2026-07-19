@@ -1,8 +1,8 @@
-# Vertano Changelog
+# Done by AI Changelog
 
 ## v0.0.1 (2026-05-04) - Initial Release
 
-- Launched Vertano content creation platform with:
+- Launched Done by AI content creation platform with:
   - SprintBuilder for focused content campaigns
   - ProgressDashboard for tracking growth metrics
   - MonetizationHub for revenue strategies

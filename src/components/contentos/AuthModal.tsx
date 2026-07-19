@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import EarnestMark from './EarnestMark';
+import DoneByAILogo from './DoneByAILogo';
 
 const AuthModal: React.FC = () => {
   const { showAuthModal, setShowAuthModal } = useAppContext();
@@ -39,7 +39,7 @@ const AuthModal: React.FC = () => {
         <div className="earnest-auth-panel rounded-[2rem] border border-white/60 p-8 shadow-[0_32px_80px_rgba(23,20,17,0.18)]">
 
           <div className="text-center mb-8">
-            <EarnestMark className="justify-center mb-4" />
+            <DoneByAILogo className="mb-6" />
             <h2 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">
               {mode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>

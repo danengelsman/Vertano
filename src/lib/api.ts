@@ -3,6 +3,11 @@ import axios from 'axios';
 
 const API_BASE_URL = '/api';
 
+// Always send the session cookie with API requests. Harmless for same-origin
+// (the Vite dev server and Express share :3000), and required if the API ever
+// moves to a separate origin.
+axios.defaults.withCredentials = true;
+
 export const getUser = async () => {
   const response = await axios.get(`${API_BASE_URL}/user`);
   return response.data;
