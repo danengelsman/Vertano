@@ -70,7 +70,7 @@ const FirstDollarTracker: React.FC = () => {
         {userProfile.onboardingComplete && (
           <div className="mt-4 rounded-[1.15rem] border border-white/10 bg-white/8 p-3">
             <p className="text-xs text-[rgba(255,255,255,0.8)]">
-              <span className="font-semibold text-[#E0B75A]">Guidance:</span> Increasing your posting frequency from {userProfile.weeklyPosts} to {userProfile.weeklyPosts + 2} posts/week could boost your estimated earnings by roughly 35%.
+              <span className="font-semibold text-[#E0B75A]">Guidance:</span> Increasing your posting frequency from {userProfile.weeklyPosts ?? 0} to {(userProfile.weeklyPosts ?? 0) + 2} posts/week could boost your estimated earnings by roughly 35%.
             </p>
           </div>
         )}

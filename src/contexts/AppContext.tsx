@@ -7,13 +7,12 @@ import {
   getBrand,
   getContent,
   getHabits,
-  getAnalytics,
-  getConnectedAccounts,
   addContent,
   updateContent,
   publishContent,
   deleteContent,
   completeChallenge as completeChallengeApi,
+  upsertProfile,
 } from '@/lib/api';
 
 export type Platform = 'tiktok' | 'instagram' | 'youtube' | 'twitter' | 'linkedin';
@@ -61,7 +60,18 @@ export interface ContentDraft {
 
 export interface ConnectedAccount {
   platform: Platform;
-  profile: any; // Google profile data
+  profile: unknown; // Google profile data
+}
+
+// What the editor needs to supply to create a draft — the database
+// generates the id, owner, status, and timestamps.
+export interface NewDraftInput {
+  title: string;
+  body: string;
+  platform: Platform;
+  type?: string;
+  score?: number;
+  score_feedback?: string;
 }
 
 export interface Badge {
@@ -115,9 +125,9 @@ interface AppContextType {
   showOnboarding: boolean;
   setShowOnboarding: (show: boolean) => void;
   drafts: ContentDraft[];
-  addDraft: (draft: ContentDraft) => void;
+  addDraft: (draft: NewDraftInput) => Promise<{ id: string }>;
   updateDraft: (id: string, updates: Partial<ContentDraft>) => void;
-  publishDraft: (id: string) => void;
+  publishDraft: (id: string) => Promise<void>;
   deleteDraft: (id: string) => void;
   streak: StreakData;
   badges: Badge[];
@@ -252,6 +262,15 @@ const defaultWeeklyBrief: WeeklyBrief = {
   avgScore: 76,
 };
 
+// jsonb columns arrive as real arrays; tolerate legacy JSON strings too.
+const asArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value) {
+    try { return JSON.parse(value); } catch { return []; }
+  }
+  return [];
+};
+
 const AppContext = createContext<AppContextType>({} as AppContextType);
 
 export const useAppContext = () => useContext(AppContext);
@@ -268,44 +287,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [xp, setXp] = useState(0);
 
-  // Firebase auth state — who is signed in right now.
-  const { user: firebaseUser } = useAuth();
+  // Supabase auth state — who is signed in right now.
+  const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch data using react-query. We only enable these queries when a Firebase
+  // Fetch data using react-query. We only enable these queries when a
   // user is signed in — there's no point hitting the API if nobody's logged
   // in, and it prevents stale fetches racing against sign-out.
-  const isAuthed = !!firebaseUser;
+  const isAuthed = !!authUser;
   const { data: userData, refetch: refetchUser } = useQuery({ queryKey: ['user'], queryFn: getUser, enabled: isAuthed });
   const { data: brandData, refetch: refetchBrand } = useQuery({ queryKey: ['brand'], queryFn: getBrand, enabled: isAuthed });
   const { data: contentData, refetch: refetchContent } = useQuery({ queryKey: ['content'], queryFn: getContent, enabled: isAuthed });
   const { data: habitsData, refetch: refetchHabits } = useQuery({ queryKey: ['habits'], queryFn: getHabits, enabled: isAuthed });
-  const { data: accountsData, refetch: refetchAccounts } = useQuery({ queryKey: ['accounts'], queryFn: getConnectedAccounts, enabled: isAuthed });
 
-  const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile);
+  const [userProfile, setUserProfileState] = useState<UserProfile>(defaultProfile);
   const [brandProfile, setBrandProfile] = useState<BrandProfile>(defaultBrand);
   const [drafts, setDrafts] = useState<ContentDraft[]>([]);
   const [streak, setStreak] = useState<StreakData>(defaultStreak);
   const [challengeDays, setChallengeDays] = useState<ChallengeDay[]>(defaultChallengeDays);
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
 
+  // The exposed setter also persists the profile to Supabase, so things like
+  // finishing onboarding survive a reload. Internal effects that hydrate
+  // state FROM the database use setUserProfileState directly to avoid
+  // writing straight back what we just read.
+  const setUserProfile = useCallback((profile: UserProfile) => {
+    setUserProfileState(profile);
+    upsertProfile({
+      name: profile.name ?? '',
+      niche: profile.niche ?? '',
+      platforms: profile.platforms ?? [],
+      monetization_goal: profile.monetizationGoal ?? 'affiliate',
+      follower_count: profile.followerCount ?? 0,
+      weekly_posts: profile.weeklyPosts ?? 0,
+      onboarding_complete: profile.onboardingComplete ?? false,
+    }).catch(err => console.error('Failed to save profile:', err));
+  }, []);
+
   useEffect(() => {
     if (userData) {
-      setUserProfile({
-        // Prefer the real Firebase identity over whatever the mock API returns.
-        id: firebaseUser?.uid || userData.id,
-        email: firebaseUser?.email || userData.email,
-        name: userData.name || firebaseUser?.displayName || '',
+      setUserProfileState({
+        // Prefer the live auth identity over the stored profile row.
+        id: authUser?.id || userData.id,
+        email: authUser?.email || userData.email || '',
+        name: userData.name || (authUser?.user_metadata?.full_name as string) || '',
         niche: userData.niche || '',
         platforms: userData.platforms || [],
-        monetizationGoal: userData.monetizationGoal || 'affiliate',
-        followerCount: userData.followerCount || 0,
-        weeklyPosts: userData.weeklyPosts || 0,
-        onboardingComplete: userData.onboardingComplete || false,
+        monetizationGoal: userData.monetization_goal || 'affiliate',
+        followerCount: userData.follower_count || 0,
+        weeklyPosts: userData.weekly_posts || 0,
+        onboardingComplete: userData.onboarding_complete || false,
       });
-      setShowOnboarding(!userData.onboardingComplete);
+      setShowOnboarding(!userData.onboarding_complete);
     }
-  }, [userData, firebaseUser]);
+  }, [userData, authUser]);
 
   useEffect(() => {
     if (brandData) {
@@ -314,19 +349,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         tagline: brandData.tagline || '',
         archetype: brandData.archetype || '',
         personality: brandData.personality || '',
-        colors: JSON.parse(brandData.colors || '[]'),
-        typography: JSON.parse(brandData.typography || '[]'),
+        colors: asArray(brandData.colors),
+        typography: asArray(brandData.typography),
         visual_style: brandData.visual_style || '',
         thumbnail_style: brandData.thumbnail_style || '',
-        content_hooks: JSON.parse(brandData.content_hooks || '[]'),
-        catchphrases: JSON.parse(brandData.catchphrases || '[]'),
+        content_hooks: asArray(brandData.content_hooks),
+        catchphrases: asArray(brandData.catchphrases),
       });
     }
   }, [brandData]);
 
   useEffect(() => {
     if (contentData) {
-      setDrafts(contentData.map((d: any) => ({
+      setDrafts(contentData.map((d: ContentDraft) => ({
         id: d.id,
         user_id: d.user_id,
         title: d.title,
@@ -351,34 +386,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalPublished: habitsData.streak.total_published,
       });
     }
-    if (habitsData?.challenge) {
-      setChallengeDays(habitsData.challenge.days.map((d: any) => ({ ...d, completed: d.completed === 1 })));
+    if (habitsData?.challenge?.days) {
+      // The DB stores only which days are done; task text and categories
+      // live in defaultChallengeDays.
+      const done = new Set(
+        habitsData.challenge.days.filter(d => d.completed).map(d => d.day),
+      );
+      setChallengeDays(defaultChallengeDays.map(d => ({ ...d, completed: done.has(d.day) })));
     }
   }, [habitsData]);
 
-  useEffect(() => {
-    if (accountsData) {
-      setConnectedAccounts(accountsData);
-    }
-  }, [accountsData]);
-
-  // When the Firebase user changes (sign in / sign out), react to it:
+  // When the auth user changes (sign in / sign out), react to it:
   //  - Signed in: overlay their real id/email/name onto userProfile so the
   //    app always shows the correct person, even if the mock API still
   //    returns a placeholder user.
   //  - Signed out: wipe local state and clear the react-query cache so no
   //    data from the previous session sticks around.
   useEffect(() => {
-    if (firebaseUser) {
-      setUserProfile(prev => ({
+    if (authUser) {
+      setUserProfileState(prev => ({
         ...prev,
-        id: firebaseUser.uid,
-        email: firebaseUser.email || prev.email,
-        name: prev.name || firebaseUser.displayName || '',
+        id: authUser.id,
+        email: authUser.email || prev.email,
+        name: prev.name || (authUser.user_metadata?.full_name as string) || '',
       }));
     } else {
       // Signed out — reset in-memory state back to defaults.
-      setUserProfile(defaultProfile);
+      setUserProfileState(defaultProfile);
       setBrandProfile(defaultBrand);
       setDrafts([]);
       setStreak(defaultStreak);
@@ -390,21 +424,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveView('dashboard');
       queryClient.clear();
     }
-  }, [firebaseUser, queryClient]);
+  }, [authUser, queryClient]);
 
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
 
-  const addDraft = useCallback(async (draft: ContentDraft) => {
-    const newDraft = await addContent({
+  const addDraft = useCallback(async (draft: NewDraftInput) => {
+    const created = await addContent({
       title: draft.title,
       body: draft.body,
-      type: draft.type,
+      type: draft.type ?? 'post',
       platform: draft.platform,
       score: draft.score,
       score_feedback: draft.score_feedback,
     });
     refetchContent();
     toast({ title: 'Draft saved', description: 'Your content has been saved as a draft.' });
+    return created;
   }, [refetchContent]);
 
   const updateDraft = useCallback(async (id: string, updates: Partial<ContentDraft>) => {

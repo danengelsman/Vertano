@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { v4 as uuidv4 } from 'uuid';
 import { generateAIContent, scoreContent } from '@/lib/api';
 
 const platformLabels: Record<Platform, string> = {
@@ -45,7 +44,7 @@ const ContentEditor: React.FC = () => {
   const [score, setScore] = useState(0);
   const [tips, setTips] = useState<string[]>([]);
   const [showFormatter, setShowFormatter] = useState(false);
-  const [formattedOutputs, setFormattedOutputs] = useState<Record<Platform, string>>({} as any);
+  const [formattedOutputs, setFormattedOutputs] = useState<Partial<Record<Platform, string>>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [copiedPlatform, setCopiedPlatform] = useState<Platform | null>(null);
@@ -79,50 +78,49 @@ const ContentEditor: React.FC = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [title, body]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!body.trim()) {
       toast({ title: 'Nothing to save', description: 'Write some content first!', variant: 'destructive' });
       return;
     }
     setIsSaving(true);
-    const draft = {
-      id: uuidv4(),
-      title: title || 'Untitled Draft',
-      body,
-      platform,
-      score,
-      published: false,
-      createdAt: new Date().toISOString(),
-    };
-    setTimeout(() => {
-      addDraft(draft);
+    try {
+      await addDraft({
+        title: title || 'Untitled Draft',
+        body,
+        platform,
+        score,
+      });
+    } catch (err) {
+      toast({ title: 'Save failed', description: (err instanceof Error && err.message) || 'Please try again.', variant: 'destructive' });
+    } finally {
       setIsSaving(false);
-    }, 500);
+    }
   }, [title, body, platform, score, addDraft]);
 
-  const handlePublish = useCallback(() => {
+  const handlePublish = useCallback(async () => {
     if (!body.trim()) {
       toast({ title: 'Nothing to publish', description: 'Write some content first!', variant: 'destructive' });
       return;
     }
     setIsPublishing(true);
-    const draft = {
-      id: uuidv4(),
-      title: title || 'Untitled Post',
-      body,
-      platform,
-      score,
-      published: true,
-      createdAt: new Date().toISOString(),
-    };
-    setTimeout(() => {
-      addDraft(draft);
-      publishDraft(draft.id);
-      setIsPublishing(false);
+    try {
+      // Create the draft first, then publish the row the database created.
+      const { id } = await addDraft({
+        title: title || 'Untitled Post',
+        body,
+        platform,
+        score,
+      });
+      await publishDraft(id);
       setTitle('');
       setBody('');
       toast({ title: 'Published!', description: `Your content has been published to ${platformLabels[platform]}. +50 XP!` });
-    }, 800);
+    } catch (err) {
+      toast({ title: 'Publish failed', description: (err instanceof Error && err.message) || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setIsPublishing(false);
+    }
   }, [title, body, platform, score, addDraft, publishDraft]);
 
   const handleFormat = useCallback(() => {

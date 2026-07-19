@@ -31,8 +31,8 @@ cd Vertano
 npm install
 
 # Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
+cp .env.example .env
+# Edit .env with your Supabase project URL and publishable (anon) key
 
 # Start development server
 npm run dev
@@ -40,11 +40,26 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) to start building.
 
+### Supabase setup
+
+The entire backend is Supabase — Postgres with row-level security, Auth, and Edge Functions:
+
+1. Create (or link) a Supabase project and apply the SQL in `supabase/migrations/`.
+2. Enable the **Google** provider under Authentication → Providers (use your Google OAuth client ID/secret, and add `https://<project-ref>.supabase.co/auth/v1/callback` as an authorized redirect URI in Google Cloud Console). Email/password sign-in works out of the box.
+3. Deploy the Edge Functions and set the Gemini secret:
+
+   ```bash
+   supabase functions deploy generate-content score-content
+   supabase secrets set GEMINI_API_KEY=your-key
+   ```
+
+4. Put the project URL and publishable key in `.env` as `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.
+
 ## 🛠️ Tech Stack
 
 - **Framework**: React + TypeScript + Vite
 - **UI**: Tailwind CSS + shadcn/ui
-- **Backend**: Supabase (PostgreSQL + Auth)
+- **Backend**: Supabase (Postgres + RLS, Auth, Edge Functions for Gemini AI calls)
 - **Data**: React Query + React Hook Form + Zod
 - **State**: Zustand (planned)
 

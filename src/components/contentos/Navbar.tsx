@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext, ActiveView } from '@/contexts/AppContext';
 import { useAuth } from '@/hooks/useAuth';
-import { logout } from '@/firebase';
+import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
 import {
   LayoutDashboard, PenTool, Map, Users, BarChart3,
@@ -33,22 +33,31 @@ const Navbar: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
-      await logout();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       toast({ title: 'Signed out', description: 'See you soon!' });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Sign-out failed:', err);
       toast({
         title: 'Sign-out failed',
-        description: err?.message || 'Please try again.',
+        description: (err instanceof Error && err.message) || 'Please try again.',
         variant: 'destructive',
       });
     }
   };
 
+  // Supabase stores OAuth profile details in user_metadata (Google fills in
+  // full_name and avatar_url / picture).
+  const displayName = (user?.user_metadata?.full_name as string) || '';
+  const photoURL =
+    (user?.user_metadata?.avatar_url as string) ||
+    (user?.user_metadata?.picture as string) ||
+    '';
+
   // Build a simple set of initials from the display name / email for the
-  // avatar fallback (used when we don't have a photoURL).
+  // avatar fallback (used when we don't have a photo).
   const initials = (() => {
-    const source = user?.displayName || user?.email || '';
+    const source = displayName || user?.email || '';
     if (!source) return 'U';
     const parts = source.split(/\s+|@/).filter(Boolean);
     const first = parts[0]?.[0] || '';
@@ -151,10 +160,10 @@ const Navbar: React.FC = () => {
                 className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground font-semibold text-sm shadow-sm hover:shadow-md transition-shadow overflow-hidden"
                 aria-label="Open user menu"
               >
-                {user?.photoURL ? (
+                {photoURL ? (
                   <img
-                    src={user.photoURL}
-                    alt={user.displayName || user.email || 'User'}
+                    src={photoURL}
+                    alt={displayName || user?.email || 'User'}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -167,7 +176,7 @@ const Navbar: React.FC = () => {
               <DropdownMenuLabel>
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold text-foreground truncate">
-                    {user?.displayName || 'Signed in'}
+                    {displayName || 'Signed in'}
                   </span>
                   {user?.email && (
                     <span className="text-xs text-muted-foreground truncate">{user.email}</span>

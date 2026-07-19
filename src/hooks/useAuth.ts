@@ -1,30 +1,35 @@
 import { useEffect, useState } from 'react';
-import { auth, onAuthStateChanged, type FirebaseUser } from '@/firebase';
+import type { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * useAuth — a tiny React hook that watches whether someone is signed in.
  *
  * It returns two things:
  *   - user: the signed-in person (or null if nobody is signed in)
- *   - loading: true while Firebase is still figuring out who (if anyone) is signed in
+ *   - loading: true while Supabase is still restoring an existing session
  *
- * Firebase takes a moment on page load to restore an existing session, so we
- * start in a "loading" state and flip it off the first time onAuthStateChanged
- * fires. That way we never flash the login screen at someone who's already
+ * Supabase takes a moment on page load to restore a stored session, so we
+ * start in a "loading" state and flip it off once the session is known.
+ * That way we never flash the login screen at someone who's already
  * signed in.
  */
 export function useAuth() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // onAuthStateChanged returns an unsubscribe function. We call it when
-    // the component using this hook unmounts so we don't leak listeners.
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       setLoading(false);
     });
-    return unsubscribe;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return { user, loading };

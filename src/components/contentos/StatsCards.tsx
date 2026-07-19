@@ -6,7 +6,7 @@ const StatsCards: React.FC = () => {
   const { streak, drafts, challengeDays, badges, currentLevel, xp } = useAppContext();
   const publishedCount = drafts.filter(d => d.published).length;
   const avgScore = drafts.length > 0
-    ? Math.round(drafts.reduce((sum, d) => sum + d.score, 0) / drafts.length)
+    ? Math.round(drafts.reduce((sum, d) => sum + (d.score ?? 0), 0) / drafts.length)
     : 0;
   const completedDays = challengeDays.filter(d => d.completed).length;
   const earnedBadges = badges.filter(b => b.earned).length;

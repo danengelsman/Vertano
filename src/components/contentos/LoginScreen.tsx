@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { loginWithGoogle } from '@/firebase';
+import { supabase } from '@/lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
 import EarnestMark from './EarnestMark';
 
@@ -9,9 +9,9 @@ import EarnestMark from './EarnestMark';
  * LoginScreen — the page people see when nobody is signed in.
  *
  * It's a full-screen welcome page with one button: "Sign in with Google".
- * Clicking it pops open Google's sign-in window. When sign-in succeeds,
- * Firebase updates its internal state, useAuth picks that up, and the app
- * swaps this screen out for the real dashboard.
+ * Clicking it redirects to Google via Supabase Auth. When sign-in succeeds,
+ * Supabase redirects back here with a session, useAuth picks that up, and
+ * the app swaps this screen out for the real dashboard.
  */
 const LoginScreen: React.FC = () => {
   const [signingIn, setSigningIn] = useState(false);
@@ -19,24 +19,19 @@ const LoginScreen: React.FC = () => {
   const handleGoogle = async () => {
     setSigningIn(true);
     try {
-      await loginWithGoogle();
-      // On success, Firebase will flip auth state and the app will re-render.
-      // No need to navigate manually.
-    } catch (err: any) {
-      // If the user closes the Google popup, Firebase throws
-      // auth/popup-closed-by-user. We don't want to show a scary error for that.
-      const code = err?.code as string | undefined;
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        // User bailed out — that's fine, just reset the button.
-      } else {
-        console.error('Google sign-in failed:', err);
-        toast({
-          title: 'Sign-in failed',
-          description: err?.message || 'Something went wrong. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } finally {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      // On success the browser navigates away to Google; nothing more to do.
+    } catch (err) {
+      console.error('Google sign-in failed:', err);
+      toast({
+        title: 'Sign-in failed',
+        description: (err instanceof Error && err.message) || 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
       setSigningIn(false);
     }
   };

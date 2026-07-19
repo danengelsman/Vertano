@@ -42,7 +42,7 @@ const Reports: React.FC = () => {
 
   const publishedDrafts = drafts.filter(d => d.published);
   const avgScore = publishedDrafts.length > 0
-    ? Math.round(publishedDrafts.reduce((s, d) => s + d.score, 0) / publishedDrafts.length)
+    ? Math.round(publishedDrafts.reduce((s, d) => s + (d.score ?? 0), 0) / publishedDrafts.length)
     : 0;
   const earnedBadges = badges.filter(b => b.earned).length;
 
@@ -219,7 +219,7 @@ const Reports: React.FC = () => {
             <h3 className="font-semibold text-slate-900 mb-4">3 Personalized Action Items</h3>
             <div className="space-y-3">
               {[
-                { title: 'Increase posting frequency', desc: `Post ${userProfile.weeklyPosts + 2}x per week instead of ${userProfile.weeklyPosts}x to grow reach by ~35%`, priority: 'High' },
+                { title: 'Increase posting frequency', desc: `Post ${(userProfile.weeklyPosts ?? 0) + 2}x per week instead of ${userProfile.weeklyPosts ?? 0}x to grow reach by ~35%`, priority: 'High' },
                 { title: 'Join affiliate programs', desc: `Sign up for 3 affiliate programs in the ${userProfile.niche || 'your'} niche to start earning commissions`, priority: 'High' },
                 { title: 'Optimize content hooks', desc: 'Your best-performing hook style is the curiosity hook. Use it in 60% of your posts.', priority: 'Medium' },
               ].map((item, idx) => (
