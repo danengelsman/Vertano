@@ -1,24 +1,25 @@
 # Project Name
 
-**Current name: Done by AI**
+**Current name: Vertano**
 
-A coined word with Italianate phonetics, chosen for its trust connotation (root: *vero* / *verità* — Italian for "true / truth"). Replaces the earlier working names "Done by AI" and "Done by AI."
+A coined word combining the Latin root *verto* (to turn) with an Italianate suffix. Means "the turning point" — literally and figuratively, the moment your content turns into income.
 
-## Use Done by AI in:
+## Use Vertano in:
 - App Store listing name
-- In-app brand mark (replaces "Done by AI" in `OnboardingModal.tsx` `<Done by AIMark />`)
+- In-app brand mark (replaces "Vertano" in `Navbar.tsx` `<VertanoLogo />`)
 - Marketing site, social handles, domain
 - All future copy, press, decks
 
-## Legacy names still present in the codebase (rename progressively):
-- `metadata.json` → `"name": "Done by AI"` — update to `"Done by AI"` when ready
-- `src/components/contentos/Done by AIMark.tsx` and any `<Done by AIMark />` usage
-- Folder name `src/components/contentos/` (cosmetic — leaving it avoids a giant import diff; rename later as a single PR)
+## Legacy names retired:
+- "Done by AI" — fully retired
+- "ContentOS" — fully retired
+- `metadata.json` → `"name": "Vertano"`
+- `package.json` → `"name": "vertano"`
+- `src/components/contentos/` folder name (cosmetic — leaving it avoids a giant import diff; rename later as a single PR)
 - Firestore admin email gate in `firestore.rules` (`danengelsman@gmail.com`) is unchanged — name change does not affect rules
 
 ## Pronunciation
-**ver-TAH-no** (Italian stress on the penultimate syllable).
+**ver-TAH-no** (Italian-style stress on the penultimate syllable).
 
 ## Decided
 2026-04-27
-

@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import { supabase } from "./src/db.ts";
+import { supabase } from "./src/db.js";
 import { v4 as uuidv4 } from 'uuid';
 import path from "path";
 import fs from "fs";
@@ -10,6 +10,11 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import { fileURLToPath } from 'url';
+import Database from 'better-sqlite3';
+import Stripe from 'stripe';
+import helmet from 'helmet';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
@@ -65,8 +70,28 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Initialize Stripe
+  const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+  // Security middleware
+  app.use(helmet());
+  app.use(cors({
+    origin: process.env.APP_URL,
+    credentials: true
+  }));
+
+  // Body parsing
   app.use(express.json());
   app.use(cookieParser());
+
+  // Rate limiting
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(limiter);
 
   // --- Session / Auth ---
   // We identify a logged-in user with a signed cookie carrying their user id.
@@ -108,15 +133,150 @@ async function startServer() {
   // (Module augmentation lives at top-level below; see `declare global`.)
 
   // Gate: rejects unauthenticated requests. Attaches req.userId on success.
-  function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const userId = verifySession(req.cookies?.[SESSION_COOKIE]);
-    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
-    req.userId = userId;
-    next();
-  }
+    function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+      const userId = verifySession(req.cookies?.[SESSION_COOKIE]);
+      if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+      req.userId = userId;
+      next();
+    }
 
-  // Find an existing user by Google identity, or create one. Returns the user id.
-  function upsertUserFromGoogle(profile: { id?: string | null; email?: string | null; name?: string | null; picture?: string | null }): string {
+    // --- Database initialization ---
+    // SQLite with better-sqlite3. Runs migrations on startup so the schema
+    // is always up to date. Keeps the DB file in the project root for easy
+    // inspection and backup.
+    const db = new Database('./creator_os.db');
+    db.pragma('journal_mode = WAL');
+
+    // Schema migrations — idempotent, safe to run on every boot.
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE,
+        name TEXT,
+        picture TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        ai_tokens_used_today INTEGER DEFAULT 0,
+        ai_tokens_reset_date TEXT DEFAULT (date('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS brands (
+        user_id TEXT PRIMARY KEY,
+        name TEXT,
+        tagline TEXT,
+        archetype TEXT,
+        personality TEXT,
+        colors TEXT, -- JSON array
+        typography TEXT, -- JSON object
+        visual_style TEXT,
+        thumbnail_style TEXT,
+        content_hooks TEXT, -- JSON array
+        catchphrases TEXT, -- JSON array
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS content (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        title TEXT,
+        body TEXT,
+        type TEXT,
+        platform TEXT,
+        status TEXT DEFAULT 'draft',
+        score REAL,
+        score_feedback TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        published_at TEXT,
+        published INTEGER DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS streaks (
+        user_id TEXT PRIMARY KEY,
+        current INTEGER DEFAULT 0,
+        longest INTEGER DEFAULT 0,
+        last_publish_date TEXT,
+        total_published INTEGER DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS challenges (
+        user_id TEXT PRIMARY KEY,
+        completed_days TEXT DEFAULT '[]', -- JSON array of day numbers
+        current_challenge_id TEXT,
+        started_at TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS analytics (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        views INTEGER DEFAULT 0,
+        watch_time_seconds INTEGER DEFAULT 0,
+        subscribers_gained INTEGER DEFAULT 0,
+        revenue_usd REAL DEFAULT 0,
+        source TEXT, -- 'youtube', 'manual', 'affiliate', etc.
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS user_accounts (
+        user_id TEXT NOT NULL,
+        platform TEXT NOT NULL, -- 'youtube', 'google', etc.
+        access_token TEXT,
+        refresh_token TEXT,
+        expiry_date INTEGER,
+        profile_data TEXT, -- JSON
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        PRIMARY KEY (user_id, platform),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS stripe_customer (
+          user_id TEXT PRIMARY KEY,
+          stripe_customer_id TEXT NOT NULL UNIQUE,
+          stripe_subscription_id TEXT,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS subscription_status (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          plan TEXT NOT NULL,
+          status TEXT NOT NULL,
+          period_start TEXT,
+          period_end TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now')),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        -- Indexes for subscription_status
+        CREATE INDEX IF NOT EXISTS idx_subscription_status_user_id ON subscription_status(user_id);
+        CREATE INDEX IF NOT EXISTS idx_subscription_status_status ON subscription_status(status);
+
+        -- Indexes for common queries
+        CREATE INDEX IF NOT EXISTS idx_content_user_created ON content(user_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_analytics_user_date ON analytics(user_id, date);
+    `);
+
+    // Graceful shutdown
+    process.on('SIGINT', () => {
+      console.log('Closing database...');
+      db.close();
+      process.exit(0);
+    });
+    process.on('SIGTERM', () => {
+      console.log('Closing database...');
+      db.close();
+      process.exit(0);
+    });
+
+    // Find an existing user by Google identity, or create one. Returns the user id.
+    function upsertUserFromGoogle(profile: { id?: string | null; email?: string | null; name?: string | null; picture?: string | null }): string {
     const email = profile.email || null;
     // Prefer matching on email so re-logins map to the same account.
     const existing = email
@@ -588,8 +748,189 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     res.json(accounts.map(a => ({
       platform: a.platform,
       profile: JSON.parse(a.profile_data)
-    })));
+    }))));
+  );
+
+  // --- Subscription & Payments ---
+
+  app.post("/api/subscribe", requireAuth, async (req, res) => {
+    try {
+      const userId = req.userId;
+
+      // Check if user already has a Stripe customer
+      let customer = db.prepare('SELECT * FROM stripe_customer WHERE user_id = ?').get(userId);
+
+      if (!customer) {
+        // Create a new Stripe customer
+        const stripeCustomer = await stripe.customers.create({
+          metadata: { userId }
+        });
+
+        // Store the customer ID
+        db.prepare('INSERT INTO stripe_customer (user_id, stripe_customer_id) VALUES (?, ?)')
+          .run(userId, stripeCustomer.id);
+
+        customer = { user_id: userId, stripe_customer_id: stripeCustomer.id, stripe_subscription_id: null };
+      }
+
+      // Create a checkout session for the Pro plan
+      const session = await stripe.checkout.sessions.create({
+        customer: customer.stripe_customer_id,
+        payment_method_types: ['card'],
+        line_items: [{
+          price: process.env.STRIPE_PRICE_ID_PRO,
+          quantity: 1,
+        }],
+        mode: 'subscription',
+        success_url: `${process.env.APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.APP_URL}/pricing`,
+      });
+
+      res.json({ sessionId: session.id, url: session.url });
+    } catch (error) {
+      console.error('Stripe checkout error:', error);
+      res.status(500).json({ error: 'Failed to create checkout session' });
+    }
   });
+
+  app.post("/api/webhook/stripe", express.raw({ type: 'application/json' }), (req, res) => {
+    const sig = req.headers['stripe-signature'];
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      console.error(`⚠️  Webhook signature verification failed.`, err.message);
+      return res.sendStatus(400);
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const checkoutSession = event.data.object;
+        // Retrieve the subscription to get the subscription ID
+        stripe.sessions.retrieve(checkoutSession.id, { expand: ['subscription'] }).then(async (session) => {
+          const subscription = session.subscription;
+          const customerId = session.customer;
+          const userIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(customerId);
+          if (userIdResult) {
+            const userId = userIdResult.user_id;
+            // Update the stripe_customer with the subscription ID
+            db.prepare('UPDATE stripe_customer SET stripe_subscription_id = ? WHERE stripe_customer_id = ?')
+              .run(subscription.id, customerId);
+            // Determine the plan from the subscription's items
+            // For simplicity, we assume the price ID in the subscription items is our Pro price
+            // In a real app, you might look up the price ID from Stripe or your own mapping
+            const plan = 'pro'; // We'll set it to pro for now
+            // Upsert subscription status
+            db.prepare(`
+              INSERT OR REPLACE INTO subscription_status (
+                id, user_id, plan, status, period_start, period_end, created_at, updated_at
+              ) VALUES (
+                ?, ?, ?, ?, ?, ?, 
+                COALESCE((SELECT created_at FROM subscription_status WHERE user_id = ?), datetime('now')),
+                datetime('now')
+              )
+            `, [
+              userId, // id (we can use user_id as id for simplicity, or generate a UUID)
+              userId,
+              plan,
+              subscription.status, // active, trialing, etc.
+              new Date(subscription.current_period_start * 1000).toISOString(),
+              new Date(subscription.current_period_end * 1000).toISOString(),
+              userId
+            ]);
+          }
+        });
+        break;
+
+      case 'invoice.payment_succeeded':
+        const invoice = event.data.object;
+        const subscriptionId = invoice.subscription;
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
+        const customerId = subscription.customer;
+        const userIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(customerId);
+        if (userIdResult) {
+          const userId = userIdResult.user_id;
+          // Update subscription status to active and update periods
+          db.prepare(`
+            UPDATE subscription_status SET 
+              status = ?, 
+              period_start = ?, 
+              period_end = ?, 
+              updated_at = datetime('now')
+            WHERE user_id = ?
+          `, [
+            subscription.status,
+            new Date(subscription.current_period_start * 1000).toISOString(),
+            new Date(subscription.current_period_end * 1000).toISOString(),
+            userId
+          ]);
+        }
+        break;
+
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object;
+        const failedSubscriptionId = failedInvoice.subscription;
+        const failedSubscription = await stripe.subscriptions.retrieve(failedSubscriptionId as string);
+        const failedCustomerId = failedSubscription.customer;
+        const failedUserIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(failedCustomerId);
+        if (failedUserIdResult) {
+          const userId = failedUserIdResult.user_id;
+          // Update subscription status to past_due
+          db.prepare(`
+            UPDATE subscription_status SET 
+              status = ?, 
+              updated_at = datetime('now')
+            WHERE user_id = ?
+          `, ['past_due', userId]);
+        }
+        break;
+
+      case 'customer.subscription.deleted':
+        const deletedSubscription = event.data.object;
+        const deletedCustomerId = deletedSubscription.customer;
+        const deletedUserIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(deletedCustomerId);
+        if (deletedUserIdResult) {
+          const userId = deletedUserIdResult.user_id;
+          // Update subscription status to canceled and clear the subscription ID in stripe_customer
+          db.prepare(`
+            UPDATE subscription_status SET 
+              status = ?, 
+              updated_at = datetime('now')
+            WHERE user_id = ?
+          `, ['canceled', userId]);
+          db.prepare('UPDATE stripe_customer SET stripe_subscription_id = NULL WHERE stripe_customer_id = ?')
+            .run(deletedCustomerId);
+        }
+        break;
+
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    // Return a 200 response to acknowledge receipt of the event
+    res.json({ received: true });
+  });
+
+  app.get("/api/subscription-status", requireAuth, (req, res) => {
+    try {
+      const userId = req.userId;
+      const status = db.prepare('SELECT * FROM subscription_status WHERE user_id = ?').get(userId);
+      if (!status) {
+        // User has no subscription record, assume free
+        res.json({ plan: 'free', status: 'active' });
+      } else {
+        res.json(status);
+      }
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      res.status(500).json({ error: 'Failed to fetch subscription status' });
+    }
+  });
+
+  // --- OAuth & Social Integration ---
 
   app.post("/api/publish/youtube", requireAuth, async (req, res) => {
     const { title, description, videoUrl } = req.body;
@@ -679,7 +1020,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta name="google-site-verification" content="ZMH-pcv71VbShROkNGynDJHXieEDPxQwx2tUiSTuFuA">
-          <title>Privacy Policy | Done by AI</title>
+          <title>Privacy Policy | Vertano</title>
           <style>
               body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
               h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -692,7 +1033,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           <h2>1. Information We Collect</h2>
           <p>We collect information you provide directly to us when you create an account, such as your name and email address. When you use our AI services, we may also collect the prompts and content you generate.</p>
           <h2>2. Google OAuth and YouTube Data</h2>
-          <p>Done by AI uses Google OAuth to allow you to connect your YouTube channel. We only request the minimum permissions necessary to upload videos and retrieve channel analytics. We do not store your Google password. Your YouTube data is used solely to provide the features of the app and is not shared with third parties.</p>
+          <p>Vertano uses Google OAuth to allow you to connect your YouTube channel. We only request the minimum permissions necessary to upload videos and retrieve channel analytics. We do not store your Google password. Your YouTube data is used solely to provide the features of the app and is not shared with third parties.</p>
           <h2>3. How We Use Your Information</h2>
           <p>We use the information we collect to provide, maintain, and improve our services, including AI-driven branding and content generation features.</p>
           <p><a href="/">Back to Home</a></p>
@@ -709,7 +1050,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta name="google-site-verification" content="ZMH-pcv71VbShROkNGynDJHXieEDPxQwx2tUiSTuFuA">
-          <title>Terms of Service | Done by AI</title>
+          <title>Terms of Service | Vertano</title>
           <style>
               body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
               h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -720,7 +1061,7 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
           <h1>Terms of Service</h1>
           <p>Last Updated: March 28, 2026</p>
           <h2>1. Acceptance of Terms</h2>
-          <p>By accessing or using Done by AI, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+          <p>By accessing or using Vertano, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
           <h2>2. AI-Generated Content</h2>
           <p>While you own the content you generate, you acknowledge that AI-generated content may not be unique and that other users may generate similar content.</p>
           <p><a href="/">Back to Home</a></p>

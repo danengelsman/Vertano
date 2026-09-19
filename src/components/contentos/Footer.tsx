@@ -1,5 +1,5 @@
 import React from 'react';
-import DoneByAILogo from './DoneByAILogo';
+import VertanoLogo from './VertanoLogo';
 import { useAppContext, ActiveView } from '@/contexts/AppContext';
 import { toast } from '@/components/ui/use-toast';
 
@@ -35,22 +35,22 @@ const Footer: React.FC = () => {
   ];
 
   const socialLinks: { label: string; url: string }[] = [
-    { label: 'Twitter',   url: 'https://twitter.com' },
-    { label: 'LinkedIn',  url: 'https://linkedin.com' },
-    { label: 'YouTube',   url: 'https://youtube.com' },
-    { label: 'Instagram', url: 'https://instagram.com' },
+    { label: 'Twitter',   url: 'https://twitter.com/vertano' },
+    { label: 'LinkedIn',  url: 'https://linkedin.com/company/vertano' },
+    { label: 'YouTube',   url: 'https://youtube.com/@vertano' },
+    { label: 'Instagram', url: 'https://instagram.com/vertano' },
   ];
 
   return (
-    <footer className="mt-12 border-t border-border/70 bg-[linear-gradient(180deg,rgba(245,240,232,0.6),rgba(245,240,232,0.96))] text-foreground">
+    <footer className="border-t border-border/70 bg-background/80 backdrop-blur-sm text-foreground">
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
             <div className="mb-4">
-              <DoneByAILogo />
+              <VertanoLogo />
             </div>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
-              The creator platform that stays aligned with you until the work starts paying back.
+              Your turning point from content to income. The only system that guides YouTube creators from first video to first dollar — then scales to full-time.
             </p>
           </div>
 
@@ -89,7 +89,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="pt-8 border-t border-border/70 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">&copy; 2026 Earnest. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">&copy; 2026 Vertano. All rights reserved.</p>
           <div className="flex items-center gap-4">
             {socialLinks.map(({ label, url }) => (
               <a
@@ -110,4 +110,3 @@ const Footer: React.FC = () => {
 };
 
 export default Footer;
-

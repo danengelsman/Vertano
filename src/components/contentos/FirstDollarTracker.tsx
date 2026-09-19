@@ -9,7 +9,7 @@ const FirstDollarTracker: React.FC = () => {
 
   return (
     <section className="relative overflow-hidden rounded-[1.9rem] border border-border/70 bg-[linear-gradient(180deg,#171411_0%,#211b17_100%)] p-6 text-white shadow-[0_24px_70px_rgba(23,20,17,0.22)] lg:p-8">
-      <div className="earnest-grid absolute inset-0 opacity-20" />
+      <div className="vertano-grid absolute inset-0 opacity-20" />
       <div className="absolute right-[-4rem] top-[-4rem] h-40 w-40 rounded-full bg-accent/12 blur-3xl" />
 
       <div className="relative">

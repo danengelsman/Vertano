@@ -1,21 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
-import DoneByAILogo from './DoneByAILogo';
+import VertanoLogo from './VertanoLogo';
+
+interface LoginScreenProps {
+  onClose: () => void;
+}
 
 /**
- * LoginScreen — the page people see when nobody is signed in.
+ * LoginScreen — shown as a modal overlay on the landing page when nobody is signed in.
  *
- * It's a full-screen welcome page with one button: "Sign in with Google".
+ * It's a centered card with one button: "Sign in with Google".
  * Clicking it asks our Express backend for a Google OAuth URL, opens Google's
  * consent screen in a popup, and waits for the backend's callback page to
  * postMessage OAUTH_AUTH_SUCCESS. At that point the session cookie is set, so
  * we re-check /api/me via useAuth().refresh() and the app swaps this screen
  * out for the real dashboard.
  */
-const LoginScreen: React.FC = () => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onClose }) => {
   const [signingIn, setSigningIn] = useState(false);
   const { refresh } = useAuth();
 
@@ -67,15 +72,34 @@ const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="bg-background min-h-screen flex items-center justify-center px-4 py-10">
-      <div className="bg-card w-full max-w-md rounded-2xl border border-border px-7 py-8 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-10 bg-background/95 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="login-title"
+    >
+      <div
+        className="bg-card w-full max-w-md rounded-2xl border border-border px-7 py-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] animate-slide-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-accent text-muted-foreground transition-colors"
+            aria-label="Close login dialog"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
         <div className="mb-8 flex flex-col items-center text-center">
-          <DoneByAILogo className="mb-5" />
-          <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">
-            Automation for Professionals
+          <VertanoLogo className="mb-5" />
+          <h1 id="login-title" className="text-3xl font-display font-semibold tracking-tight text-foreground">
+            Your turning point from content to income.
           </h1>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            We make complex AI workflows feel as simple and reliable as native software. It just works, and it gets the job done.
+            Early access for YouTube educators. Free during beta. No credit card required.
           </p>
         </div>
 
@@ -107,6 +131,14 @@ const LoginScreen: React.FC = () => {
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Google sign-in is live now. More sign-in options can follow later.
         </p>
+
+        <Button
+          variant="ghost"
+          onClick={onClose}
+          className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground"
+        >
+          Continue as guest →
+        </Button>
       </div>
     </div>
   );

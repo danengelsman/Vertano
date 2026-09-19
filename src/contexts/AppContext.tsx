@@ -268,14 +268,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [xp, setXp] = useState(0);
 
-  // Firebase auth state — who is signed in right now.
-  const { user: firebaseUser } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch data using react-query. We only enable these queries when a Firebase
-  // user is signed in — there's no point hitting the API if nobody's logged
-  // in, and it prevents stale fetches racing against sign-out.
-  const isAuthed = !!firebaseUser;
+  // Fetch data using react-query. We only enable these queries when a user is signed in
+  // via our Express backend -- there's no point hitting the API if nobody's logged in,
+  // and it prevents stale fetches racing against sign-out.
+  const isAuthed = !!user;
   const { data: userData, refetch: refetchUser } = useQuery({ queryKey: ['user'], queryFn: getUser, enabled: isAuthed });
   const { data: brandData, refetch: refetchBrand } = useQuery({ queryKey: ['brand'], queryFn: getBrand, enabled: isAuthed });
   const { data: contentData, refetch: refetchContent } = useQuery({ queryKey: ['content'], queryFn: getContent, enabled: isAuthed });
@@ -293,9 +292,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (userData) {
       setUserProfile({
         // Prefer the real backend identity over whatever the mock API returns.
-        id: firebaseUser?.id || userData.id,
-        email: firebaseUser?.email || userData.email,
-        name: userData.name || firebaseUser?.name || '',
+        id: user?.id || userData.id,
+        email: user?.email || userData.email,
+        name: userData.name || user?.name || '',
         niche: userData.niche || '',
         platforms: userData.platforms || [],
         monetizationGoal: userData.monetizationGoal || 'affiliate',
@@ -305,7 +304,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       setShowOnboarding(!userData.onboardingComplete);
     }
-  }, [userData, firebaseUser]);
+  }, [userData, user]);
 
   useEffect(() => {
     if (brandData) {
@@ -362,19 +361,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [accountsData]);
 
-  // When the Firebase user changes (sign in / sign out), react to it:
+  // When the user changes (sign in / sign out), react to it:
   //  - Signed in: overlay their real id/email/name onto userProfile so the
   //    app always shows the correct person, even if the mock API still
   //    returns a placeholder user.
   //  - Signed out: wipe local state and clear the react-query cache so no
   //    data from the previous session sticks around.
   useEffect(() => {
-    if (firebaseUser) {
+    if (user) {
       setUserProfile(prev => ({
         ...prev,
-        id: firebaseUser.id,
-        email: firebaseUser.email || prev.email,
-        name: prev.name || firebaseUser.name || '',
+        id: user.id,
+        email: user.email || prev.email,
+        name: prev.name || user.name || '',
       }));
     } else {
       // Signed out — reset in-memory state back to defaults.
@@ -390,7 +389,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveView('dashboard');
       queryClient.clear();
     }
-  }, [firebaseUser, queryClient]);
+  }, [user, queryClient]);
 
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
 

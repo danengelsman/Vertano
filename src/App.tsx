@@ -8,6 +8,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SprintBuilderPage from "./pages/SprintBuilderPage";
+import Pricing from "./pages/Pricing";
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -25,8 +27,10 @@ const App = () => (
         >
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/sprint-builder" element={<SprintBuilderPage />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

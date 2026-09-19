@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Send, Target, Loader2, ArrowRight, X, Sparkles } from 'lucide-react';
-import DoneByAILogo from './DoneByAILogo';
+import VertanoLogo from './VertanoLogo';
 import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
@@ -127,7 +127,7 @@ const OnboardingModal: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white flex-shrink-0">
           <div className="flex items-center gap-3">
-            <DoneByAILogo showWordmark={false} />
+            <VertanoLogo showWordmark={false} />
             <div>
               <h2 className="text-base font-bold text-slate-900">Your Creator Coach</h2>
               <p className="text-xs text-slate-400">Powered by AI · Here to help you grow</p>

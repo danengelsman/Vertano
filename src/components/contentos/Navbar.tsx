@@ -1,13 +1,12 @@
 import React from 'react';
 import { useAppContext, ActiveView } from '@/contexts/AppContext';
 import { useAuth } from '@/hooks/useAuth';
-import { logout } from '@/firebase';
 import { toast } from '@/components/ui/use-toast';
 import {
   LayoutDashboard, PenTool, Map, Users, BarChart3,
   Menu, X, Zap, Bell, LogOut, User as UserIcon
 } from 'lucide-react';
-import DoneByAILogo from './DoneByAILogo';
+import VertanoLogo from './VertanoLogo';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -65,7 +64,7 @@ const Navbar: React.FC = () => {
             {sidebarOpen ? <X className="w-5 h-5 text-foreground" /> : <Menu className="w-5 h-5 text-foreground" />}
           </button>
           <button className="cursor-pointer" onClick={() => setActiveView('dashboard')}>
-            <DoneByAILogo
+            <VertanoLogo
               iconClassName="h-9 w-9"
               labelClassName="hidden sm:flex"
             />

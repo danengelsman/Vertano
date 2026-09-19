@@ -4,12 +4,13 @@
 
 ## Introduction
 
-Done by AI ("we," "us," or "our") is committed to protecting your privacy and is committed to being transparent about how we collect, use, and share your information. This Privacy Policy explains what information we collect, how we use it, and your choices regarding your personal information.
+Vertano ("we," "us," or "our") is committed to protecting your privacy and is committed to being transparent about how we collect, use, and share your information. This Privacy Policy explains what information we collect, how we use it, and your choices regarding your personal information.
 
 ## Information We Collect
 
 ### Personal Information
-When you use Done by AI, we may collect certain personal information that you provide directly, such as:
+
+When you use Vertano, we may collect certain personal information that you provide directly, such as:
 
 - Name and contact information
 - Email address
@@ -17,7 +18,8 @@ When you use Done by AI, we may collect certain personal information that you pr
 - Profile information and preferences
 
 ### Automatically Collected Information
-We may automatically collect certain information when you use Done by AI, including:
+
+We may automatically collect certain information when you use Vertano, including:
 
 - Device information (model, operating system)
 - Usage data (features used, time spent, interaction patterns)
@@ -60,11 +62,11 @@ You have certain rights regarding your personal information, including:
 
 ## Children's Privacy
 
-Done by AI is not intended for children under the age of 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and you believe your child has provided us with personal information, please contact us so we can delete it.
+Vertano is not intended for children under the age of 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and you believe your child has provided us with personal information, please contact us so we can delete it.
 
 ## International Data Transfers
 
-Since Done by AI operates globally, your information may be transferred to and processed in countries other than your own. We take steps to ensure that your information is protected in accordance with this Privacy Policy when it is transferred internationally.
+Since Vertano operates globally, your information may be transferred to and processed in countries other than your own. We take steps to ensure that your information is protected in accordance with this Privacy Policy when it is transferred internationally.
 
 ## Changes to This Policy
 
@@ -74,7 +76,7 @@ We may update this Privacy Policy from time to time. We will notify you of any c
 
 If you have any questions about this Privacy Policy, please contact us at:
 
-**Email:** privacy@Done by AI.app  
-**Website:** https://Done by AI.app
+**Email:** privacy@vertano.app  
+**Website:** https://vertano.app
 
 Last updated: May 4, 2026

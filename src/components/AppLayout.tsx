@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,6 +19,7 @@ const AppLayout: React.FC = () => {
   const { activeView, userProfile } = useAppContext();
   const { user, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
+  const [showLogin, setShowLogin] = useState(true);
 
   const renderView = () => {
     switch (activeView) {
@@ -37,9 +38,7 @@ const AppLayout: React.FC = () => {
     }
   };
 
-  // Step 1: while Firebase is restoring the previous session, show a blank
-  // loader so we don't flash the login screen at someone who's already signed
-  // in.
+  // While auth is restoring, show a blank loader
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -48,36 +47,41 @@ const AppLayout: React.FC = () => {
     );
   }
 
-  // Step 2: nobody is signed in — show the login screen.
-  if (!user) {
-    return <LoginScreen />;
+  // Signed in — show the app
+  if (user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+        {/* Modals */}
+        <OnboardingModal />
+        <AuthModal />
+
+        {/* Navbar - always visible */}
+        <Navbar />
+
+        {/* Main Content */}
+        {!userProfile?.onboardingComplete && activeView === 'dashboard' ? (
+          <>
+            <LandingHero />
+            <Footer />
+          </>
+        ) : (
+          <main className="relative flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8">
+            {renderView()}
+          </main>
+        )}
+
+        {/* Footer for authenticated views */}
+        {userProfile?.onboardingComplete && <Footer />}
+      </div>
+    );
   }
 
-  // Step 3: signed in — show the real app.
+  // NOT signed in — show PUBLIC marketing landing page with login modal
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-
-      {/* Modals */}
-      <OnboardingModal />
-      <AuthModal />
-
-      {/* Navbar - always visible */}
-      <Navbar />
-
-      {/* Main Content */}
-      {!userProfile?.onboardingComplete && activeView === 'dashboard' ? (
-        <>
-          <LandingHero />
-          <Footer />
-        </>
-      ) : (
-        <main className="relative flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8">
-          {renderView()}
-        </main>
-      )}
-
-      {/* Footer for authenticated views */}
-      {userProfile?.onboardingComplete && <Footer />}
+    <div className="min-h-screen bg-background flex flex-col">
+      <LandingHero />
+      <Footer />
+      {showLogin && <LoginScreen onClose={() => setShowLogin(false)} />}
     </div>
   );
 };

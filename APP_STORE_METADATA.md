@@ -2,40 +2,41 @@
 
 ## App Information
 
-| Field | Value |
-|-------|-------|
-| **App Name** | Done by AI |
-| **Bundle ID** | com.Done by AI.app (pending) |
-| **Primary Language** | English |
-| **Version Number** | 0.0.1 |
-| **Build Number** | 1 |
-| **Copyright** | © 2026 Dan Engelsman |
+|| Field | Value |
+||-------|-------|
+|| **App Name** | Vertano |
+|| **Bundle ID** | com.vertano.app (pending) |
+|| **Primary Language** | English |
+|| **Version Number** | 0.0.1 |
+|| **Build Number** | 1 |
+|| **Copyright** | © 2026 Dan Engelsman |
 
 ## App Description
 
-**Done by AI** is the truth engine for building your content empire. This step-by-step content creation system helps beginners build YouTube channels, grow audiences, and monetize their content.
+**Vertano** is a guided creator system that helps YouTube educators plan, create, and track content that turns expertise into income. With structured sprints, AI-assisted script scoring, and monetization tracking, Vertano turns content dreams into measurable progress.
 
-With structured sprints, milestone tracking, and gamification, Done by AI turns content dreams into measurable results. Whether you're just starting or looking to scale, Done by AI provides the tools and guidance to help you succeed.
+Whether you're just starting or looking to scale, Vertano provides the tools and guidance to help you succeed.
 
 ### Key Features:
 - SprintBuilder: Create focused content campaigns with daily tasks
+- ContentEditor: AI scores your script before you record — you decide
 - ProgressDashboard: Track your growth metrics and milestone achievements
-- MonetizationHub: Discover revenue streams for your content
-- Gamification: Earn badges and complete challenges
-- Secure authentication via Supabase
+- MonetizationHub: Track affiliate links, sponsorships, and products
+- Gamification: Earn badges, complete challenges, and level up
+- Authentication: Google OAuth keeps your data secure
 
 ## Keywords
 
-content creation, youtube, creator, education, productivity, learning, dashboard, monetization, sprint, goals, tracking, gamification, beginners, creator tools
+content creation, youtube, creator, education, productivity, learning, dashboard, monetization, sprint, goals, tracking, gamification, beginners, creator tools, educator, expert
 
 ## Screenshots
 
 Required screenshots for iPhone (6.1" and 6.7" display):
 - [ ] Launch Screen (Screenshot 1)
 - [ ] SprintBuilder Interface (Screenshot 2)
-- [ ] Progress Dashboard (Screenshot 3)
+- [ ] ContentEditor with AI Score (Screenshot 3)
 - [ ] Monetization Hub (Screenshot 4)
-- [ ] Gamification Badges (Screenshot 5)
+- [ ] Progress Dashboard (Screenshot 5)
 
 ## App Store Category
 
@@ -48,15 +49,15 @@ Required screenshots for iPhone (6.1" and 6.7" display):
 
 ## Privacy Policy URL
 
-https://github.com/danengelsman/Done by AI/blob/master/PRIVACY_POLICY.md
+https://github.com/danengelsman/Vertano/blob/master/PRIVACY_POLICY.md
 
 ## Support URL
 
-https://github.com/danengelsman/Done by AI/issues
+https://github.com/danengelsman/Vertano/issues
 
 ## Marketing URL
 
-https://Done by AI.app (pending domain setup)
+https://vertano.app (domain pending setup)
 
 ## Export Compliance
 
@@ -65,10 +66,10 @@ This app does not contain encryption. Export compliance is not required.
 ## In-App Purchases
 
 None at launch. Future versions may include:
-- Done by AI Pro subscription ($4.99/month)
+- Vertano Pro subscription ($29/month)
 - Premium templates and assets
 - Advanced analytics features
 
 ## Review Notes
 
-This is a content creation tool designed to help beginners build YouTube channels and other social media content. The app includes educational resources and productivity tools to help users achieve their content creation goals.
+This is a content creation tool designed to help YouTube educators plan, create, and monetize educational content. The app includes structured sprints, AI assistance, and monetization tracking.

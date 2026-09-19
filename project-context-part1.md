@@ -37,7 +37,7 @@
 
 ## Project summary
 
-**name:** content-monetize-beginner (ContentOS — React + Vite + TS + Tailwind + shadcn/ui)
+|| **name:** content-monetize-beginner (Vertano — React + Vite + TS + Tailwind + shadcn/ui)
 
 ### package.json
 
@@ -2714,7 +2714,7 @@ const Footer: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
                 <Zap className="w-4 h-4 text-white" />
               </div>
-              <span className="text-lg font-bold">ContentOS</span>
+              <span className="text-lg font-bold">Vertano</span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">
               From first post to first dollar. Your AI-powered content creation mentor.
@@ -2760,7 +2760,7 @@ const Footer: React.FC = () => {
 
         {/* Bottom */}
         <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-slate-500">&copy; 2026 ContentOS. All rights reserved.</p>
+          <p className="text-xs text-slate-500">&copy; 2026 Vertano. All rights reserved.</p>
           <div className="flex items-center gap-4">
             {/* Social icons */}
             {['Twitter', 'LinkedIn', 'YouTube', 'Instagram'].map(social => (

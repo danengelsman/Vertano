@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import DoneByAILogo from './DoneByAILogo';
+import VertanoLogo from './VertanoLogo';
 
 const AuthModal: React.FC = () => {
   const { showAuthModal, setShowAuthModal } = useAppContext();
@@ -36,10 +36,10 @@ const AuthModal: React.FC = () => {
           <DialogTitle>{mode === 'login' ? 'Sign In' : 'Create Account'}</DialogTitle>
           <DialogDescription>Authenticate to continue your creator journey</DialogDescription>
         </VisuallyHidden>
-        <div className="earnest-auth-panel rounded-[2rem] border border-white/60 p-8 shadow-[0_32px_80px_rgba(23,20,17,0.18)]">
+        <div className="vertano-auth-panel rounded-[2rem] border border-white/60 p-8 shadow-[0_32px_80px_rgba(23,20,17,0.18)]">
 
           <div className="text-center mb-8">
-            <DoneByAILogo className="mb-6" />
+            <VertanoLogo className="mb-6" />
             <h2 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">
               {mode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>

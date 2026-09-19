@@ -248,7 +248,23 @@ const Reports: React.FC = () => {
             <Lock className="w-8 h-8 text-violet-400 mx-auto mb-3" />
             <h3 className="font-semibold text-violet-900">Unlock Full Income Report</h3>
             <p className="text-sm text-violet-600 mt-1 mb-4">Get detailed analytics, revenue projections, and personalized coaching with Pro.</p>
-            <Button className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600" onClick={() => toast({ title: 'Upgrade to Pro', description: 'Stripe checkout would open here for subscription.' })}>
+            <Button className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600" onClick={async () => {
+              try {
+                const res = await fetch('/api/subscribe', { method: 'POST', credentials: 'include' });
+                if (!res.ok) {
+                  const errorData = await res.json();
+                  throw new Error(errorData.error || 'Failed to create checkout session');
+                }
+                const data = await res.json();
+                if (data.url) {
+                  window.location.href = data.url;
+                } else {
+                  throw new Error('No checkout URL returned');
+                }
+              } catch (err) {
+                toast({ title: 'Error', description: err.message });
+              }
+            }}>
               Upgrade to Pro <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -310,7 +326,7 @@ const Reports: React.FC = () => {
 
           <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
             <p className="text-xs text-slate-500 leading-relaxed">
-              <span className="font-semibold">Privacy Notice:</span> ContentOS uses official OAuth protocols to connect your accounts.
+              <span className="font-semibold">Privacy Notice:</span> Vertano uses official OAuth protocols to connect your accounts.
               We only access the data you explicitly authorize. You have granular control over what data is collected and displayed,
               and you can disconnect any account at any time from this page.
             </p>

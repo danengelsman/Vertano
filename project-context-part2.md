@@ -124,8 +124,8 @@ const LandingHero: React.FC = () => {
               </span>
             </h1>
             <p className="text-lg lg:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed">
-              ContentOS is your AI-powered mentor that helps beginner creators build a content habit,
-              grow their audience, and earn their first dollar — all in one platform.
+              Vertano is your AI-powered mentor that helps YouTube educators build a content habit,
+              grow their audience, and earn their first dollar — all in one system.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
@@ -223,7 +223,7 @@ const LandingHero: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-16">
             <span className="text-sm font-semibold text-violet-600 bg-violet-50 px-3 py-1 rounded-full">Testimonials</span>
-            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mt-4">Creators Love ContentOS</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mt-4">Creators Love Vertano</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map(t => (
@@ -260,7 +260,7 @@ const LandingHero: React.FC = () => {
             Ready to Earn Your First Dollar?
           </h2>
           <p className="text-lg text-white/70 mb-8">
-            Join 12,000+ creators who started their journey with ContentOS. It's free to begin.
+            Join the Vertano creator community — it's free to begin.
           </p>
           <Button
             onClick={() => setShowOnboarding(true)}
@@ -323,7 +323,7 @@ const Navbar: React.FC = () => {
               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-violet-700 to-indigo-600 bg-clip-text text-transparent hidden sm:block">
-              ContentOS
+              Vertano
             </span>
           </div>
         </div>
@@ -519,7 +519,7 @@ const OnboardingModal: React.FC = () => {
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-violet-200">
           <Sparkles className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900">Welcome to ContentOS</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Welcome to Vertano</h2>
         <p className="text-slate-500 mt-2">Your AI-powered mentor for going from first post to first dollar</p>
       </div>
       <div>
@@ -664,7 +664,7 @@ const OnboardingModal: React.FC = () => {
       <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden border-0 shadow-2xl">
         <VisuallyHidden>
           <DialogTitle>Onboarding</DialogTitle>
-          <DialogDescription>Set up your ContentOS creator profile</DialogDescription>
+          <DialogDescription>Set up your Vertano creator profile</DialogDescription>
         </VisuallyHidden>
         {/* Progress Bar */}
         <div className="h-1.5 bg-slate-100">
@@ -1046,7 +1046,7 @@ const Reports: React.FC = () => {
 
           <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
             <p className="text-xs text-slate-500 leading-relaxed">
-              <span className="font-semibold">Privacy Notice:</span> ContentOS uses official OAuth protocols to connect your accounts.
+              <span className="font-semibold">Privacy Notice:</span> Vertano uses official OAuth protocols to connect your accounts.
               We only access the data you explicitly authorize. You have granular control over what data is collected and displayed,
               and you can disconnect any account at any time from this page.
             </p>

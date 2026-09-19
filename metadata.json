@@ -1,6 +1,6 @@
 {
-  "name": "Done by AI",
-  "description": "The operating system for creators. Go from zero to your first dollar with AI coaching, branding, and content automation.",
+  "name": "Vertano",
+  "description": "The guided creator system for YouTube educators. SprintBuilder, ContentEditor, MonetizationHub in one workflow.",
   "requestFramePermissions": [
     "camera",
     "microphone"
