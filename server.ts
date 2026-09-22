@@ -68,10 +68,10 @@ interface AccountSummaryRow {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
   // Initialize Stripe
-  const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
   // Security middleware
   app.use(helmet());
@@ -748,17 +748,20 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     res.json(accounts.map(a => ({
       platform: a.platform,
       profile: JSON.parse(a.profile_data)
-    }))));
-  );
+    })));
+  });
 
   // --- Subscription & Payments ---
 
   app.post("/api/subscribe", requireAuth, async (req, res) => {
     try {
-      const userId = req.userId;
+      const userId = req.userId!;
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
 
       // Check if user already has a Stripe customer
-      let customer = db.prepare('SELECT * FROM stripe_customer WHERE user_id = ?').get(userId);
+      let customer = db.prepare('SELECT * FROM stripe_customer WHERE user_id = ?').get(userId) as { user_id: string; stripe_customer_id: string; stripe_subscription_id: string | null } | undefined;
 
       if (!customer) {
         // Create a new Stripe customer
@@ -770,12 +773,12 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
         db.prepare('INSERT INTO stripe_customer (user_id, stripe_customer_id) VALUES (?, ?)')
           .run(userId, stripeCustomer.id);
 
-        customer = { user_id: userId, stripe_customer_id: stripeCustomer.id, stripe_subscription_id: null };
+        customer = { user_id: userId, stripe_customer_id: stripeCustomer.id!, stripe_subscription_id: null };
       }
 
       // Create a checkout session for the Pro plan
       const session = await stripe.checkout.sessions.create({
-        customer: customer.stripe_customer_id,
+        customer: customer!.stripe_customer_id,
         payment_method_types: ['card'],
         line_items: [{
           price: process.env.STRIPE_PRICE_ID_PRO,
@@ -793,15 +796,15 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
     }
   });
 
-  app.post("/api/webhook/stripe", express.raw({ type: 'application/json' }), (req, res) => {
-    const sig = req.headers['stripe-signature'];
+  app.post("/api/webhook/stripe", express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'] as string;
 
     let event;
 
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
     } catch (err) {
-      console.error(`⚠️  Webhook signature verification failed.`, err.message);
+      console.error(`⚠️  Webhook signature verification failed.`, (err as Error).message);
       return res.sendStatus(400);
     }
 
@@ -810,97 +813,99 @@ Do NOT include markdown formatting or backticks. Return ONLY the raw JSON.`;
       case 'checkout.session.completed':
         const checkoutSession = event.data.object;
         // Retrieve the subscription to get the subscription ID
-        stripe.sessions.retrieve(checkoutSession.id, { expand: ['subscription'] }).then(async (session) => {
-          const subscription = session.subscription;
-          const customerId = session.customer;
-          const userIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(customerId);
-          if (userIdResult) {
-            const userId = userIdResult.user_id;
-            // Update the stripe_customer with the subscription ID
-            db.prepare('UPDATE stripe_customer SET stripe_subscription_id = ? WHERE stripe_customer_id = ?')
-              .run(subscription.id, customerId);
-            // Determine the plan from the subscription's items
-            // For simplicity, we assume the price ID in the subscription items is our Pro price
-            // In a real app, you might look up the price ID from Stripe or your own mapping
-            const plan = 'pro'; // We'll set it to pro for now
-            // Upsert subscription status
-            db.prepare(`
-              INSERT OR REPLACE INTO subscription_status (
-                id, user_id, plan, status, period_start, period_end, created_at, updated_at
-              ) VALUES (
-                ?, ?, ?, ?, ?, ?, 
-                COALESCE((SELECT created_at FROM subscription_status WHERE user_id = ?), datetime('now')),
-                datetime('now')
-              )
-            `, [
-              userId, // id (we can use user_id as id for simplicity, or generate a UUID)
-              userId,
-              plan,
-              subscription.status, // active, trialing, etc.
-              new Date(subscription.current_period_start * 1000).toISOString(),
-              new Date(subscription.current_period_end * 1000).toISOString(),
-              userId
-            ]);
-          }
-        });
+        const session = await stripe.checkout.sessions.retrieve(
+          checkoutSession.id,
+          { expand: ['subscription'] }
+        );
+        const subscription = session.subscription as Stripe.Subscription;
+        const customerId = session.customer as string;
+        const userIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(customerId) as { user_id: string } | undefined;
+        if (userIdResult) {
+          const userId = userIdResult.user_id;
+          // Update the stripe_customer with the subscription ID
+          db.prepare('UPDATE stripe_customer SET stripe_subscription_id = ? WHERE stripe_customer_id = ?')
+            .run(subscription.id, customerId);
+          // Determine the plan from the subscription's items
+          // For simplicity, we assume the price ID in the subscription items is our Pro price
+          // In a real app, you might look up the price ID from Stripe or your own mapping
+          const plan = 'pro'; // We'll set it to pro for now
+          // Upsert subscription status
+          db.prepare(`
+            INSERT OR REPLACE INTO subscription_status (
+              id, user_id, plan, status, period_start, period_end, created_at, updated_at
+            ) VALUES (
+              ?, ?, ?, ?, ?, ?,
+              COALESCE((SELECT created_at FROM subscription_status WHERE user_id = ?), datetime('now')),
+              datetime('now')
+            )
+          `).run(
+            userId, // id (we can use user_id as id for simplicity, or generate a UUID)
+            userId,
+            plan,
+            subscription.status, // active, trialing, etc.
+            new Date((subscription as any).current_period_start * 1000).toISOString(),
+            new Date((subscription as any).current_period_end * 1000).toISOString(),
+            userId
+          );
+        }
         break;
 
       case 'invoice.payment_succeeded':
         const invoice = event.data.object;
-        const subscriptionId = invoice.subscription;
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
-        const customerId = subscription.customer;
-        const userIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(customerId);
-        if (userIdResult) {
-          const userId = userIdResult.user_id;
+        const subscriptionId = invoice.subscription as string;
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        const custId = sub.customer as string;
+        const userIdResult2 = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(custId) as { user_id: string } | undefined;
+        if (userIdResult2) {
+          const userId = userIdResult2.user_id;
           // Update subscription status to active and update periods
           db.prepare(`
-            UPDATE subscription_status SET 
-              status = ?, 
-              period_start = ?, 
-              period_end = ?, 
+            UPDATE subscription_status SET
+              status = ?,
+              period_start = ?,
+              period_end = ?,
               updated_at = datetime('now')
             WHERE user_id = ?
-          `, [
-            subscription.status,
-            new Date(subscription.current_period_start * 1000).toISOString(),
-            new Date(subscription.current_period_end * 1000).toISOString(),
+          `).run(
+            sub.status,
+            new Date((sub as any).current_period_start * 1000).toISOString(),
+            new Date((sub as any).current_period_end * 1000).toISOString(),
             userId
-          ]);
+          );
         }
         break;
 
       case 'invoice.payment_failed':
         const failedInvoice = event.data.object;
-        const failedSubscriptionId = failedInvoice.subscription;
-        const failedSubscription = await stripe.subscriptions.retrieve(failedSubscriptionId as string);
-        const failedCustomerId = failedSubscription.customer;
-        const failedUserIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(failedCustomerId);
+        const failedSubscriptionId = failedInvoice.subscription as string;
+        const failedSub = await stripe.subscriptions.retrieve(failedSubscriptionId);
+        const failedCustomerId = failedSub.customer as string;
+        const failedUserIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(failedCustomerId) as { user_id: string } | undefined;
         if (failedUserIdResult) {
           const userId = failedUserIdResult.user_id;
           // Update subscription status to past_due
           db.prepare(`
-            UPDATE subscription_status SET 
-              status = ?, 
+            UPDATE subscription_status SET
+              status = ?,
               updated_at = datetime('now')
             WHERE user_id = ?
-          `, ['past_due', userId]);
+          `).run('past_due', userId);
         }
         break;
 
       case 'customer.subscription.deleted':
         const deletedSubscription = event.data.object;
-        const deletedCustomerId = deletedSubscription.customer;
-        const deletedUserIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(deletedCustomerId);
+        const deletedCustomerId = deletedSubscription.customer as string;
+        const deletedUserIdResult = db.prepare('SELECT user_id FROM stripe_customer WHERE stripe_customer_id = ?').get(deletedCustomerId) as { user_id: string } | undefined;
         if (deletedUserIdResult) {
           const userId = deletedUserIdResult.user_id;
           // Update subscription status to canceled and clear the subscription ID in stripe_customer
           db.prepare(`
-            UPDATE subscription_status SET 
-              status = ?, 
+            UPDATE subscription_status SET
+              status = ?,
               updated_at = datetime('now')
             WHERE user_id = ?
-          `, ['canceled', userId]);
+          `).run('canceled', userId);
           db.prepare('UPDATE stripe_customer SET stripe_subscription_id = NULL WHERE stripe_customer_id = ?')
             .run(deletedCustomerId);
         }
